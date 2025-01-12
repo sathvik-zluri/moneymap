@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+
+    "experimentalDecorators": true, // Required for MikroORM
+    "emitDecoratorMetadata": true // Required for MikroORM
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "mikro-orm.config.ts"],
+  "exclude": ["node_modules"],
+  "files": ["mikro-orm.config.ts"]
+}
