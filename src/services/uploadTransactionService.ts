@@ -20,6 +20,7 @@ interface UploadResult {
 export const uploadTransactionService = async (
   fileBuffer: Buffer
 ): Promise<UploadResult> => {
+
   const orm = await connectDB();
   if (!orm) throw new Error("Database connection failed");
   const em = orm.em.fork();
@@ -118,6 +119,7 @@ export const uploadTransactionService = async (
         });
       },
       error: (error: Error) => {
+        console.log("Parsing error occurred:", error);
         reject(new Error(`Failed to parse file: ${error.message}`));
       },
     });

@@ -3,7 +3,7 @@ import { Transctions } from "../entities/Transctions";
 
 interface UpdateTransactionParams {
   id: number;
-  date?: string; // Optional: date field
+  rawDate?: string; // Optional: date field
   description?: string; // Optional: description field
   amount?: number; // Optional: amount field
   currency?: string; // Optional: currency field
@@ -11,7 +11,7 @@ interface UpdateTransactionParams {
 
 export const updateTransactionService = async ({
   id,
-  date,
+  rawDate,
   description,
   amount,
   currency,
@@ -37,7 +37,7 @@ export const updateTransactionService = async ({
   }
 
   // Update the transaction properties if provided
-  if (date) transaction.Date = new Date(date);
+  if (rawDate) transaction.Date = new Date(rawDate);
   if (description) transaction.Description = description;
   if (amount) transaction.Amount = amount;
   if (currency) transaction.Currency = currency;

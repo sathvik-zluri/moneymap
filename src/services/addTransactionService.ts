@@ -3,14 +3,14 @@ import { Transctions } from "../entities/Transctions";
 
 // Define the type for parameters to add a transaction
 interface AddTransactionParams {
-    date: string; // Date as a string (ISO format)
+    rawDate: string; // Date as a string (ISO format)
     description: string; 
     amount: number;
     currency: string; 
 }
 
 export const addTransactionService = async ({
-    date,
+    rawDate,
     description,
     amount,
     currency,
@@ -28,7 +28,7 @@ export const addTransactionService = async ({
   
     // Create a new transaction entity
     const transaction = new Transctions();
-    const parsedDate = new Date(date); // Parsing the date from string to Date
+    const parsedDate = new Date(rawDate); // Parsing the date from string to Date
   
     transaction.Date = parsedDate; 
     transaction.Description = description; 
