@@ -1,11 +1,12 @@
 import { PostgreSqlDriver } from "@mikro-orm/postgresql";
 import { Options } from "@mikro-orm/core";
 import { Transctions } from "./src/entities/Transctions";
+import path from "path";
 
 const mikroOrmConfig: Options<PostgreSqlDriver> = {
   driver: PostgreSqlDriver,
   migrations: {
-    path: "./src/migrations", // Path to store migration files
+    path: path.join(path.resolve(),'src/migrations'), // Path to store migration files
   },
   entities: [Transctions], // Entities representing the database schema (models)
   clientUrl: "postgres://postgres:123456@localhost:5432/moneymapdb",

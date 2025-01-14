@@ -1,6 +1,7 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
 
 @Entity({ tableName: "transction" })
+@Unique({ properties: ["Date", "Description"] })
 export class Transctions {
   @PrimaryKey({ type: "serial" })
   id!: number;
@@ -9,7 +10,7 @@ export class Transctions {
   Date!: Date;
 
   @Property({ type: "text" })
-  Description = "";
+  Description!: string;
 
   @Property({ type: "float" })
   Amount!: number;
