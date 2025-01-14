@@ -16,7 +16,7 @@ import {
   uploadTransactions,
 } from "../../src/controllers/transactionController";
 
-// Mock the services
+// Mocking the services
 jest.mock("../../src/services/addTransactionService");
 jest.mock("../../src/services/deleteRowsService");
 jest.mock("../../src/services/deleteTransactionService");
