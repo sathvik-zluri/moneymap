@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
 
 //services
-import { getTransactionsService } from "../services/getTransactionsService ";
-import { addTransactionService } from "../services/addTransactionService ";
-import { updateTransactionService } from "../services/updateTransactionService ";
-import { deleteTransactionService } from "../services/deleteTransactionService ";
+import { getTransactionsService } from "../services/getTransactionsService";
+import { addTransactionService } from "../services/addTransactionService";
+import { updateTransactionService } from "../services/updateTransactionService";
+import { deleteTransactionService } from "../services/deleteTransactionService";
 import { uploadTransactionService } from "../services/uploadTransactionService";
 import { deleteRowsService } from "../services/deleteRowsService";
-
 
 //Get all transctions
 export const getTransctions = async (
@@ -17,20 +16,42 @@ export const getTransctions = async (
   try {
     const { page = 1, limit = 10, sort = "desc" } = req.query;
 
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+
+    if (isNaN(parsedPage) || isNaN(parsedLimit)) {
+      res.status(400).json({
+        message: "Invalid page or limit",
+        error: "Invalid page or limit",
+      });
+      return;
+    }
+
+    const validSortOrders = ["asc", "desc"];
+    if (!validSortOrders.includes(sort as string)) {
+      res.status(400).json({
+        message: "Invalid sort order",
+        error: "Invalid sort order",
+      });
+      return;
+    }
+
     // Call the service to get transactions
     const { transactions, totalCount } = await getTransactionsService({
-      page: Number(page),
-      limit: Number(limit),
+      page: parsedPage,
+      limit: parsedLimit,
       sort: sort as "asc" | "desc",
     });
 
     // Return the fetched transactions along with the total count
     res.status(200).json({ data: transactions, totalCount });
-    return;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching transactions:", error);
-    res.status(500).json({ message: "Failed to fetch transactions", error });
-    return;
+
+    res.status(500).json({
+      message: "Failed to fetch transactions",
+      error: "Database error",
+    });
   }
 };
 
@@ -39,12 +60,12 @@ export const addTransctions = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { date, Description, Amount, Currency } = req.body;
+  const { Date: rawDate, Description, Amount, Currency } = req.body;
 
   try {
     // Call the service to add the transaction
     const transaction = await addTransactionService({
-      date,
+      rawDate,
       description: Description,
       amount: Amount,
       currency: Currency,
@@ -56,8 +77,11 @@ export const addTransctions = async (
 
     return;
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to add transaction", error });
+    console.error("Error adding transaction:", error);
+    res.status(500).json({
+      message: "Failed to add transaction",
+      error: "Database error",
+    });
     return;
   }
 };
@@ -69,14 +93,23 @@ export const updateTransction = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { date, Description, Amount, Currency } = req.body;
+    const { Date: rawDate, Description, Amount, Currency } = req.body;
+
+    // Validate ID
+    if (!id || isNaN(Number(id))) {
+      res.status(400).json({
+        message: "Invalid ID",
+        error: "Invalid ID",
+      });
+      return;
+    }
 
     // Call the service to update the transaction
     const transaction = await updateTransactionService({
       id: Number(id),
-      date,
+      rawDate,
       description: Description,
-      amount: Amount,
+      amount: Number(Amount),
       currency: Currency,
     });
 
@@ -84,11 +117,11 @@ export const updateTransction = async (
       message: "Transaction updated successfully",
       transaction,
     });
-    return;
   } catch (error) {
+    console.error("Error updating transaction:", error);
     res.status(500).json({
       message: "Failed to update transaction",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Database error",
     });
   }
 };
@@ -101,31 +134,38 @@ export const deleteTransaction = async (
   try {
     const { id } = req.params;
 
+    if (!id || isNaN(Number(id))) {
+      res.status(400).json({
+        message: "Invalid ID",
+        error: "Invalid ID",
+      });
+      return;
+    }
+
     // Call the service to delete the transaction
     await deleteTransactionService(Number(id));
 
     res.status(200).json({ message: "Transaction deleted successfully" });
     return;
   } catch (error) {
+    console.error("Error deleting transaction:", error);
     res.status(500).json({
       message: "Failed to delete transaction",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Database error",
     });
   }
 };
 
 // Upload CSV file and process transactions
-export const uploadTransactions = async (req: Request, res: Response) => {
+export const uploadTransactions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const file = req.file;
 
-    if (!file) {
-      res.status(400).json({ message: "No file uploaded" });
-      return;
-    }
-  
     //call the service to upload the transaction
-    const result = await uploadTransactionService(file.buffer);
+    const result = await uploadTransactionService(file!.buffer);
 
     res.status(200).json({
       message: result.message,
@@ -134,24 +174,30 @@ export const uploadTransactions = async (req: Request, res: Response) => {
       schemaErrors: result.schemaErrors,
     });
   } catch (error) {
+    console.error("Error processing file:", error);
     res.status(500).json({
       message: "Failed to process file",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "File processing error",
     });
   }
 };
 
 //Delete all rows
-export const deleteRows = async (req: Request, res: Response): Promise<void> => {
+export const deleteRows = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Call the service to delete all rows
     await deleteRowsService();
-    res.status(200).json({ message: "All rows have been deleted successfully" });
+    res
+      .status(200)
+      .json({ message: "All rows have been deleted successfully" });
   } catch (error) {
     console.error("Error deleting rows:", error);
     res.status(500).json({
       message: "Failed to delete rows",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: "Database error",
     });
   }
 };
