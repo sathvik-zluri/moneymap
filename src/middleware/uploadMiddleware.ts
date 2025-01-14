@@ -9,7 +9,8 @@ const upload = multer({ storage });
 export const uploadMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   upload.single("file")(req, res, (err: MulterError | any) => {
     if (err) {
-      return res.status(400).json({ error: err.message });
+        console.error("Error uploading file:", err.message);
+        return res.status(400).json({ error: "No file uploaded" });
     }
     next();
   });
