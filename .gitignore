@@ -10,3 +10,6 @@
 
 # package files
 package-lock.json
+
+# Ingnoring coverge files
+coverage/
