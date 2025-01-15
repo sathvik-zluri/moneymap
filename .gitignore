@@ -13,3 +13,6 @@ package-lock.json
 
 # Ingnoring coverge files
 coverage/
+
+#Ignore the dist folder
+dist/
