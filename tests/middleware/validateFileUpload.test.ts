@@ -1,8 +1,8 @@
 import { Response } from "express";
 import {
   validateFileUpload,
-  FileRequest,
 } from "../../src/middleware/validateFileUpload";
+import { FileRequest } from "../../src/types/types";
 
 // Mock the necessary objects
 describe("validateFileUpload Middleware", () => {
