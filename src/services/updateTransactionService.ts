@@ -1,13 +1,6 @@
 import { connectDB } from "../data/database";
 import { Transctions } from "../entities/Transctions";
-
-interface UpdateTransactionParams {
-  id: number;
-  rawDate?: string; // Optional: date field
-  description?: string; // Optional: description field
-  amount?: number; // Optional: amount field
-  currency?: string; // Optional: currency field
-}
+import { UpdateTransactionParams } from "../types/types";
 
 export const updateTransactionService = async ({
   id,

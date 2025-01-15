@@ -1,11 +1,6 @@
 import { connectDB } from "../data/database";
 import { Transctions } from "../entities/Transctions";
-
-interface GetTransactionsParams {
-  page: number;
-  limit: number;
-  sort: "asc" | "desc";
-}
+import { GetTransactionsParams } from "../types/types";
 
 export const getTransactionsService = async ({
   page,
@@ -40,5 +35,4 @@ export const getTransactionsService = async ({
   const totalCount = await em.count(Transctions);
 
   return { transactions, totalCount };
-
 };
