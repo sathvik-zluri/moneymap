@@ -1,9 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-
-
-export interface FileRequest extends Request {
-  file?: Express.Multer.File;
-}
+import { Response, NextFunction } from "express";
+import { FileRequest } from "../types/types";
 
 export const validateFileUpload = (
   req: FileRequest,
