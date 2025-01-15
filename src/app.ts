@@ -15,6 +15,11 @@ app.use(express.urlencoded({ extended: true }));
 // Using routes
 app.use("/api/v1/txns", transctionRouter);
 
+//Entry page
+app.get("/", (req: Request, res: Response) => {
+  res.send("Welcome to the transaction API");
+});
+
 
 
 
