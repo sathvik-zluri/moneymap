@@ -1,16 +1,10 @@
 import Papa from "papaparse";
 import { uploadTransactionService } from "../../src/services/uploadTransactionService";
 import { connectDB } from "../../src/data/database";
-import { Transctions } from "../../src/entities/Transctions";
 
 // Mock the `connectDB` function and the entity manager
 jest.mock("../../src/data/database", () => ({
   connectDB: jest.fn(),
-}));
-
-// Mock the `isValid` function from `date-fns`
-jest.mock("date-fns", () => ({
-  isValid: jest.fn(() => true),
 }));
 
 jest.mock("papaparse", () => ({
@@ -23,7 +17,7 @@ describe("uploadTransactionService", () => {
 
   beforeEach(() => {
     mockEm = {
-      findOne: jest.fn(),
+      find: jest.fn(),
       persist: jest.fn(),
       flush: jest.fn(),
     };
@@ -43,14 +37,12 @@ describe("uploadTransactionService", () => {
         `;
     const buffer = Buffer.from(csvContent, "utf-8");
 
-    mockEm.findOne.mockResolvedValue(null); // No duplicates in the database
+    mockEm.find.mockResolvedValue([]); // No duplicates in the database
 
     // Mock the persist and flush behavior
     const mockPersist = jest.fn().mockReturnThis(); // Make `persist` chainable
     mockEm.persist = mockPersist;
     mockEm.flush = jest.fn().mockResolvedValue(undefined); // Ensure `flush` resolves without errors
-
-    jest.requireMock("date-fns").isValid.mockReturnValue(true);
 
     (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
       options.complete({
@@ -90,8 +82,20 @@ describe("uploadTransactionService", () => {
     mockEm.persist = mockPersist;
     mockEm.flush = jest.fn().mockResolvedValue(undefined);
 
-    // Mock date-fns validation to return false for invalid date
-    jest.requireMock("date-fns").isValid.mockReturnValue(false);
+    mockEm.find.mockResolvedValue([]);
+
+    // Mock parseDate only for this test case
+    const parseDateMock = jest.spyOn(
+      require("../../src/utils/utilityFunctions"),
+      "parseDate"
+    );
+    parseDateMock.mockImplementation((date) => {
+      const rawDate = date as string; // Assert the type to string
+      if (rawDate === "invalid-date") {
+        return null; // Return null for invalid date
+      }
+      return new Date(rawDate); // Otherwise, return a valid Date object
+    });
 
     // Mock Papa.parse for invalid date
     (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
@@ -130,6 +134,9 @@ describe("uploadTransactionService", () => {
     // Ensure no persist or flush calls are made
     expect(mockEm.persist).not.toHaveBeenCalled();
     expect(mockEm.flush).not.toHaveBeenCalled();
+
+    // Restore the original parseDate implementation after the test
+    parseDateMock.mockRestore();
   });
 
   it("should detect and track file-level duplicates", async () => {
@@ -140,12 +147,13 @@ describe("uploadTransactionService", () => {
       `;
     const buffer = Buffer.from(csvContent, "utf-8");
 
+    mockEm.find.mockResolvedValue([]); // No database duplicates
+
     // Mock the persist and flush behavior to avoid unexpected calls
     const mockPersist = jest.fn().mockReturnThis();
     mockEm.persist = mockPersist;
     mockEm.flush = jest.fn().mockResolvedValue(undefined);
 
-    jest.requireMock("date-fns").isValid.mockReturnValue(true);
     // Mock Papa.parse for file-level duplicates
     (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
       options.complete({
@@ -193,13 +201,18 @@ describe("uploadTransactionService", () => {
       `;
     const buffer = Buffer.from(csvContent, "utf-8");
 
+    // Mock the database query to return existing transactions
+    mockEm.find.mockResolvedValue([
+      {
+        Date: new Date("2023-01-01"),
+        Description: "Test Transaction",
+      },
+    ]);
+
     // Mock the persist and flush behavior to avoid unexpected calls
     const mockPersist = jest.fn().mockReturnThis();
     mockEm.persist = mockPersist;
     mockEm.flush = jest.fn().mockResolvedValue(undefined);
-
-    mockEm.findOne.mockResolvedValue(new Transctions()); // Simulate a database duplicate
-    jest.requireMock("date-fns").isValid.mockReturnValue(true);
 
     // Mock Papa.parse for database-level duplicates
     (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
@@ -242,12 +255,12 @@ describe("uploadTransactionService", () => {
       `;
     const buffer = Buffer.from(csvContent, "utf-8");
 
+    mockEm.find.mockResolvedValue([]); // No duplicates
+
     // Mock the persist and flush behavior to avoid unexpected calls
     const mockPersist = jest.fn().mockReturnThis();
     mockEm.persist = mockPersist;
     mockEm.flush = jest.fn().mockResolvedValue(undefined);
-
-    jest.requireMock("date-fns").isValid.mockReturnValue(true);
 
     // Mock Papa.parse for missing fields
     (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
@@ -278,8 +291,7 @@ describe("uploadTransactionService", () => {
             Amount: "100",
             Currency: "USD",
           },
-          message:
-            "Invalid schema: Missing required fields empty description/currency, or invalid amount",
+          message: "Invalid schema: Missing required fields or invalid amount",
         },
       ],
     });
@@ -296,13 +308,11 @@ describe("uploadTransactionService", () => {
     const bufferWithBOM = Buffer.from(csvContentWithBOM, "utf-8");
     const bufferWithoutBOM = Buffer.from(csvContentWithoutBOM, "utf-8");
 
-    mockEm.findOne.mockResolvedValue(null); // No duplicates in the database
+    mockEm.find.mockResolvedValue([]);
 
     const mockPersist = jest.fn().mockReturnThis(); // Make `persist` chainable
     mockEm.persist = mockPersist;
     mockEm.flush = jest.fn().mockResolvedValue(undefined); // Ensure `flush` resolves without errors
-
-    jest.requireMock("date-fns").isValid.mockReturnValue(true);
 
     // Mock Papa.parse for buffer with BOM
     (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
