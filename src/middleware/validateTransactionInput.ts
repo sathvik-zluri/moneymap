@@ -13,10 +13,14 @@ const validateField = (
     return "This field is required";
   if (type === "string" && (typeof field !== "string" || field.trim() === ""))
     return "Must be a non-empty string";
-  if (type === "number" && (typeof field !== "number" || field <= (minValue || 0) || !Number.isFinite(field)))
+  if (
+    type === "number" &&
+    (typeof field !== "number" ||
+      field <= (minValue || 0) ||
+      !Number.isFinite(field))
+  )
     return "Must be a valid positive number";
-  if (type === "date" && isNaN(Date.parse(field)))
-    return "Invalid date format";
+  if (type === "date" && isNaN(Date.parse(field))) return "Invalid date format";
   return null;
 };
 
@@ -26,7 +30,7 @@ export const validateTransactionInput = async (
   next: NextFunction
 ): Promise<void> => {
   const { Date: rawDate, Description, Amount, Currency } = req.body;
-  const {id} = req.params || {};
+  const { id } = req.params || {};
 
   // Validate required fields with respective types
   const validationErrors = [
@@ -34,13 +38,15 @@ export const validateTransactionInput = async (
     { field: Description, type: "string", required: true },
     { field: Amount, type: "number", required: true, minValue: 0 },
     { field: Currency, type: "string", required: true },
-  ].map(({ field, type, required, minValue }) =>
-    validateField(field, type, required, minValue)
-  ).filter(Boolean);
+  ]
+    .map(({ field, type, required, minValue }) =>
+      validateField(field, type, required, minValue)
+    )
+    .filter(Boolean);
 
   if (validationErrors.length > 0) {
-     res.status(400).json({ message: validationErrors.join(", ") });
-     return;
+    res.status(400).json({ message: validationErrors.join(", ") });
+    return;
   }
 
   try {
@@ -48,8 +54,8 @@ export const validateTransactionInput = async (
     const orm = await connectDB();
 
     if (!orm) {
-       res.status(500).json({ message: "Database connection failed" });
-       return;
+      res.status(500).json({ message: "Database connection failed" });
+      return;
     }
 
     const em = orm.em.fork(); // Get the entity manager from the connected ORM
@@ -69,8 +75,9 @@ export const validateTransactionInput = async (
       isDeleted: false, // Ensure we don't count soft-deleted records
     });
     if (existingTransaction) {
-       res.status(409).json({
-        message: "A transaction with the same date and description already exists",
+      res.status(409).json({
+        message:
+          "A transaction with the same date and description already exists",
       });
       return;
     }
@@ -78,7 +85,7 @@ export const validateTransactionInput = async (
     next(); // Validation passed, proceed to the next middleware or controller
   } catch (error) {
     console.error("Validation error:", error);
-     res.status(500).json({ message: "Server error during validation", error });
-     return;
+    res.status(500).json({ message: "Server error during validation", error });
+    return;
   }
 };
