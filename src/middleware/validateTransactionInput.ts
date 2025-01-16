@@ -54,10 +54,12 @@ export const validateTransactionInput = async (
 
     const em = orm.em.fork(); // Get the entity manager from the connected ORM
 
-    const transaction = await em.findOne(Transctions, { id: Number(id) });  
-    if (!transaction) {
-       res.status(404).json({ message: "Transaction not found" });
-       return;
+    if (id) {
+      const transaction = await em.findOne(Transctions, { id: Number(id) });
+      if (!transaction) {
+        res.status(404).json({ message: "Transaction not found" });
+        return;
+      }
     }
 
     // Check for duplicate transactions (date and description match)
