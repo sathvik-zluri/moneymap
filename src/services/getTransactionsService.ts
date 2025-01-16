@@ -34,5 +34,13 @@ export const getTransactionsService = async ({
   // Get the total count of transactions
   const totalCount = await em.count(Transctions);
 
-  return { transactions, totalCount };
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return {
+    currentPage: page,
+    totalPages,
+    totalCount,
+    transactions,
+  };
 };

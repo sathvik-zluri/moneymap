@@ -13,14 +13,10 @@ describe("getTransactionsService", () => {
   });
 
   it("should return transactions with pagination and sorting", async () => {
-    const mockParams: {
-      page: number;
-      limit: number;
-      sort: "asc" | "desc";
-    } = {
+    const mockParams = {
       page: 1,
       limit: 5,
-      sort: "asc",
+      sort: "asc" as const,
     };
 
     const mockTransactions = [
@@ -54,18 +50,16 @@ describe("getTransactionsService", () => {
     expect(result).toEqual({
       transactions: mockTransactions,
       totalCount: 10,
+      currentPage: 1,
+      totalPages: 2, // totalCount / limit = 10 / 5 = 2
     });
   });
 
   it("should handle a different page and limit", async () => {
-    const mockParams: {
-      page: number;
-      limit: number;
-      sort: "asc" | "desc";
-    } = {
+    const mockParams = {
       page: 2,
       limit: 3,
-      sort: "desc",
+      sort: "desc" as const,
     };
 
     const mockTransactions = [
@@ -100,6 +94,8 @@ describe("getTransactionsService", () => {
     expect(result).toEqual({
       transactions: mockTransactions,
       totalCount: 20,
+      currentPage: 2,
+      totalPages: 7, // totalCount / limit = 20 / 3 = 6.67 → rounded up to 7
     });
   });
 
@@ -122,14 +118,10 @@ describe("getTransactionsService", () => {
   });
 
   it("should return an empty array and count as 0 if no transactions exist", async () => {
-    const mockParams: {
-      page: number;
-      limit: number;
-      sort: "asc" | "desc";
-    } = {
+    const mockParams = {
       page: 1,
       limit: 5,
-      sort: "asc",
+      sort: "asc" as const,
     };
 
     const mockFork = {
@@ -158,6 +150,8 @@ describe("getTransactionsService", () => {
     expect(result).toEqual({
       transactions: [],
       totalCount: 0,
+      currentPage: 1,
+      totalPages: 0, // No pages when totalCount is 0
     });
   });
 });
