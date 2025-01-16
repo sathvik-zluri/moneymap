@@ -37,15 +37,23 @@ export const getTransctions = async (
     }
 
     // Call the service to get transactions
-    const { transactions, totalCount } = await getTransactionsService({
-      page: parsedPage,
-      limit: parsedLimit,
-      sort: sort as "asc" | "desc",
-    });
+    const { transactions, totalCount, currentPage, totalPages } =
+      await getTransactionsService({
+        page: parsedPage,
+        limit: parsedLimit,
+        sort: sort as "asc" | "desc",
+      });
 
     // Return the fetched transactions along with the total count
-    res.status(200).json({ data: transactions, totalCount });
-  } catch (error: unknown) {
+    res.status(200).json({
+      data: transactions,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalCount,
+      },
+    });
+  } catch (error) {
     console.error("Error fetching transactions:", error);
 
     res.status(500).json({

@@ -37,12 +37,14 @@ describe("Transaction Controllers", () => {
 
       const mockResponse = {
         status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
+        json: jest.fn(),
       } as unknown as Response;
 
       (getTransactionsService as jest.Mock).mockResolvedValue({
         transactions: [],
         totalCount: 0,
+        currentPage: 1,
+        totalPages: 0,
       });
 
       await getTransctions(mockRequest, mockResponse);
@@ -50,7 +52,11 @@ describe("Transaction Controllers", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         data: [],
-        totalCount: 0,
+        pagination: {
+          currentPage: 1,
+          totalCount: 0,
+          totalPages: 0,
+        },
       });
     });
 
@@ -82,15 +88,26 @@ describe("Transaction Controllers", () => {
 
       const mockResponse = {
         status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
+        json: jest.fn(),
       } as unknown as Response;
+
+      (getTransactionsService as jest.Mock).mockResolvedValue({
+        transactions: [],
+        totalCount: 0,
+        currentPage: 1,
+        totalPages: 0,
+      });
 
       await getTransctions(mockRequest, mockResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        data: [], // Assuming the service returns an empty array
-        totalCount: 0, // Assuming totalCount is also 0
+        data: [],
+        pagination: {
+          currentPage: 1,
+          totalCount: 0,
+          totalPages: 0,
+        },
       });
     });
 
@@ -101,24 +118,28 @@ describe("Transaction Controllers", () => {
 
       const mockResponse = {
         status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
+        json: jest.fn(),
       } as unknown as Response;
 
-      // Mocking the service response
       (getTransactionsService as jest.Mock).mockResolvedValue({
         transactions: [],
         totalCount: 0,
+        currentPage: 2,
+        totalPages: 0,
       });
 
       await getTransctions(mockRequest, mockResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        data: [], // Assuming service returns an empty array
-        totalCount: 0, // Assuming totalCount is also 0
+        data: [],
+        pagination: {
+          currentPage: 2,
+          totalCount: 0,
+          totalPages: 0,
+        },
       });
     });
-
     it("should return 400 when sort order is invalid", async () => {
       const mockRequest = {
         query: { page: "1", limit: "10", sort: "invalid" },
