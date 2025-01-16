@@ -30,7 +30,7 @@ const mikroOrmConfig: Options<PostgreSqlDriver> = {
   driverOptions: {
     connection: {
       ssl: {
-        ca: fs.readFileSync(sslCert || "").toString(),
+        ca: fs.readFileSync(sslCert || ""),
       },
     },
   },
