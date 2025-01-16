@@ -151,7 +151,7 @@ export const deleteTransaction = async (
     console.error("Error deleting transaction:", error);
     res.status(500).json({
       message: "Failed to delete transaction",
-      error: "Database error",
+      error: "Database error or ID invalid",
     });
   }
 };

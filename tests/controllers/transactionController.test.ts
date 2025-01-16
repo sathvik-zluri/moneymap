@@ -351,7 +351,7 @@ describe("Transaction Controllers", () => {
       } as unknown as Response;
 
       (deleteTransactionService as jest.Mock).mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error or ID invalid")
       );
 
       await deleteTransaction(mockRequest, mockResponse);
@@ -359,7 +359,7 @@ describe("Transaction Controllers", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         message: "Failed to delete transaction",
-        error: "Database error",
+        error: "Database error or ID invalid",
       });
     });
   });
