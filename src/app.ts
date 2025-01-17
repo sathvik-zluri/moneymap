@@ -2,11 +2,15 @@ import express, { Request, Response } from "express";
 import { config } from "dotenv";
 import transctionRouter from "./routes/transctionRoutes";
 import internalRouter from "./routes/internalRoutes";
+import cors from "cors";
 
 // Load .env variables in a secure and accessible way
 config();
 
 export const app = express();
+
+// Use the CORS middleware
+app.use(cors());
 
 // Middleware
 app.use(express.json());
