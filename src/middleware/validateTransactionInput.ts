@@ -1,91 +1,54 @@
 import { Request, Response, NextFunction } from "express";
-import { Transctions } from "../entities/Transctions";
-import { connectDB } from "../data/database";
+import Joi from "joi";
 
-// Utility function for field validation
-const validateField = (
-  field: any,
-  type: string,
-  required: boolean,
-  minValue?: number
-) => {
-  if (required && (field === undefined || field === null))
-    return "This field is required";
-  if (type === "string" && (typeof field !== "string" || field.trim() === ""))
-    return "Must be a non-empty string";
-  if (
-    type === "number" &&
-    (typeof field !== "number" ||
-      field <= (minValue || 0) ||
-      !Number.isFinite(field))
-  )
-    return "Must be a valid positive number";
-  if (type === "date" && isNaN(Date.parse(field))) return "Invalid date format";
-  return null;
-};
-
-export const validateTransactionInput = async (
+export const validateTransactionInput = (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
-  const { Date: rawDate, Description, Amount, Currency } = req.body;
-  const { id } = req.params || {};
+): void => {
+  const schema = Joi.object({
+    Date: Joi.date()
+      .max("now") // Ensures the date is not greater than today
+      .required()
+      .messages({
+        "date.base": "Date must be a valid date",
+        "date.max": "Date cannot be in the future",
+        "any.required": "Date is required",
+      }),
+    Description: Joi.string().trim().required().messages({
+      "string.base": "Description must be a string",
+      "string.empty": "Description cannot be empty",
+      "any.required": "Description is required",
+    }),
+    Amount: Joi.number()
+      .positive()
+      .precision(2) // Ensures the number has 2 decimal places
+      .max(999999999999999.99) // Limits the amount to 10 digits (including 2 decimals)
+      .required()
+      .messages({
+        "number.base": "Amount must be a number",
+        "number.positive": "Amount must be greater than 0",
+        "number.precision": "Amount can have a maximum of 2 decimal places",
+        "number.max": "Amount cannot exceed 999999999999999.99",
+        "any.required": "Amount is required",
+      }),
+    Currency: Joi.string().trim().required().messages({
+      "string.base": "Currency must be a string",
+      "string.empty": "Currency cannot be empty",
+      "any.required": "Currency is required",
+    }),
+  });
 
-  // Validate required fields with respective types
-  const validationErrors = [
-    { field: rawDate, type: "date", required: true },
-    { field: Description, type: "string", required: true },
-    { field: Amount, type: "number", required: true, minValue: 0 },
-    { field: Currency, type: "string", required: true },
-  ]
-    .map(({ field, type, required, minValue }) =>
-      validateField(field, type, required, minValue)
-    )
-    .filter(Boolean);
+  //abortEarly: false will return all the validation errors found
+  const { error } = schema.validate(req.body, { abortEarly: false });
 
-  if (validationErrors.length > 0) {
-    res.status(400).json({ message: validationErrors.join(", ") });
-    return;
-  }
-
-  try {
-    // Initialize the database connection
-    const orm = await connectDB();
-
-    if (!orm) {
-      res.status(500).json({ message: "Database connection failed" });
-      return;
-    }
-
-    const em = orm.em.fork(); // Get the entity manager from the connected ORM
-
-    if (id) {
-      const transaction = await em.findOne(Transctions, { id: Number(id) });
-      if (!transaction) {
-        res.status(404).json({ message: "Transaction not found" });
-        return;
-      }
-    }
-
-    // Check for duplicate transactions (date and description match)
-    const existingTransaction = await em.findOne(Transctions, {
-      Date: new Date(rawDate),
-      Description,
-      isDeleted: false, // Ensure we don't count soft-deleted records
+  if (error) {
+    res.status(400).json({
+      message: "Validation error",
+      errors: error.details.map((detail) => detail.message),
     });
-    if (existingTransaction) {
-      res.status(409).json({
-        message:
-          "A transaction with the same date and description already exists",
-      });
-      return;
-    }
-
-    next(); // Validation passed, proceed to the next middleware or controller
-  } catch (error) {
-    console.error("Validation error:", error);
-    res.status(500).json({ message: "Server error during validation", error });
-    return;
+    return; // Stop further execution if validation fails
   }
+
+  next();
 };
