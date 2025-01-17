@@ -18,7 +18,7 @@ const sslCert = process.env.PG_SSL_CA;
 
 const connectionString: string = `postgres://${UserName}:${Password}@${Host}:${Port}/${DataBase}?sslmode=require`;
 
-const mikroOrmConfig: Options<PostgreSqlDriver> = {
+const mikroOrmConfig: Options = {
   driver: PostgreSqlDriver,
   migrations: {
     path: path.join(path.resolve(), "src/migrations"), // Path to store migration files
@@ -32,7 +32,13 @@ const mikroOrmConfig: Options<PostgreSqlDriver> = {
       ssl: {
         ca: fs.readFileSync(sslCert || ""),
       },
+      connectionTimeoutMillis: 2000, // Timeout in milliseconds for a connection attempt
     },
+  },
+  pool: {
+    min: 2, // Minimum number of connections in the pool
+    max: 10, // Maximum number of connections in the pool
+    idleTimeoutMillis: 30000, // Time in milliseconds before idle connections are closed
   },
 };
 
