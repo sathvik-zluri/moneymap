@@ -1,6 +1,6 @@
-import { connectDB } from "../data/database";
 import { Transctions } from "../entities/Transctions";
 import { GetTransactionsParams } from "../types/types";
+import { getEntityManager } from "../data/getEntityManger";
 
 export const getTransactionsService = async ({
   page,
@@ -10,20 +10,13 @@ export const getTransactionsService = async ({
   const skip = (page - 1) * limit;
   const take = limit;
 
-  // Connect to DB using connectDB utility
-  const orm = await connectDB();
-
-  if (!orm) {
-    throw new Error("Failed to initialize the database connection");
-  }
-
   // Fork the EntityManager for isolated database interaction
-  const em = orm.em.fork();
+  const em = await getEntityManager();
 
   // Fetch transactions with pagination and sorting
   const transactions = await em.find(
     Transctions,
-    {},
+    { isDeleted: false },
     {
       orderBy: { Date: sort },
       limit: take,

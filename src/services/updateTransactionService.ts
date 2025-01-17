@@ -1,6 +1,8 @@
 import { connectDB } from "../data/database";
+import { getEntityManager } from "../data/getEntityManger";
 import { Transctions } from "../entities/Transctions";
 import { UpdateTransactionParams } from "../types/types";
+import { getTransactionById } from "./getTransactionById";
 
 export const updateTransactionService = async ({
   id,
@@ -9,25 +11,11 @@ export const updateTransactionService = async ({
   amount,
   currency,
 }: UpdateTransactionParams) => {
-  // Connect to DB using connectDB utility
-  const orm = await connectDB();
-
-  if (!orm) {
-    throw new Error("Failed to initialize the database connection");
-  }
-
   // Fork the EntityManager for isolated database interaction
-  const em = orm.em.fork();
+  const em = await getEntityManager();
 
   // Fetch the transaction by ID, excluding deleted ones
-  const transaction = await em.findOne(Transctions, {
-    id,
-    isDeleted: false,
-  });
-
-  if (!transaction) {
-    throw new Error("Transaction not found or ID invalid");
-  }
+  const transaction = (await getTransactionById(id, em)) as Transctions;
 
   // Update the transaction properties if provided
   if (rawDate) transaction.Date = new Date(rawDate);

@@ -1,15 +1,14 @@
-import { connectDB } from "../data/database";
 import { Transctions } from "../entities/Transctions";
 import Papa from "papaparse";
-import { createUniqueKey, parseDate } from "../utils/utilityFunctions";
+import { parseDate } from "../utils/utilityFunctions";
 import { TransactionRow, UploadResult } from "../types/types";
+import { getEntityManager } from "../data/getEntityManger";
 
 export const uploadTransactionService = async (
   fileBuffer: Buffer
 ): Promise<UploadResult> => {
-  const orm = await connectDB();
-  if (!orm) throw new Error("Database connection failed");
-  const em = orm.em.fork();
+  //Getting EntityManager from the connection
+  const em = await getEntityManager();
 
   let fileContent = fileBuffer.toString("utf-8");
   if (fileContent.charCodeAt(0) === 0xfeff) {
@@ -21,82 +20,91 @@ export const uploadTransactionService = async (
   const schemaErrors: any[] = [];
   const seenTransactions = new Set<string>();
 
-  // Parse CSV content
-  return new Promise((resolve, reject) => {
+  // Parse CSV content and validate data
+  const rows = await new Promise<TransactionRow[]>((resolve, reject) => {
     Papa.parse<TransactionRow>(fileContent, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
-        // Fetch all existing transactions from DB in bulk
-        const dbRecords = await em.find(
-          Transctions,
-          {},
-          { fields: ["Date", "Description"] }
-        );
-
-        // Create a set of database-level unique keys
-        const dbDuplicates = new Set(
-          dbRecords.map((record) =>
-            createUniqueKey(record.Date.toISOString(), record.Description)
-          )
-        );
-
-        for (const row of results.data) {
-          const { Date: rawDate, Description, Amount, Currency } = row;
-
-          const dateObject = parseDate(rawDate);
-          if (!dateObject) {
-            schemaErrors.push({ row, message: "Invalid date format" });
-            continue;
-          }
-
-          const parsedAmount = parseFloat(Amount);
-          if (!Description || isNaN(parsedAmount) || !Currency) {
-            schemaErrors.push({
-              row,
-              message:
-                "Invalid schema: Missing required fields or invalid amount",
-            });
-            continue;
-          }
-
-          const uniqueKey = createUniqueKey(
-            dateObject.toISOString(),
-            Description
-          );
-          if (seenTransactions.has(uniqueKey) || dbDuplicates.has(uniqueKey)) {
-            duplicates.push(row);
-            continue;
-          }
-          seenTransactions.add(uniqueKey);
-
-          const transaction = new Transctions();
-          transaction.Date = dateObject;
-          transaction.Description = Description;
-          transaction.Amount = parsedAmount;
-          transaction.Currency = Currency;
-
-          transactions.push(transaction);
-        }
-
-        if (transactions.length > 0) {
-          await em.persist(transactions).flush(); // Bulk save
-        }
-
-        resolve({
-          message:
-            transactions.length > 0
-              ? "File processed successfully"
-              : "Empty file",
-          transactionsSaved: transactions.length,
-          duplicates,
-          schemaErrors,
-        });
-      },
-      error: (error: Error) => {
-        console.log("Parsing error occurred:", error);
-        reject(new Error(`Failed to parse file: ${error.message}`));
-      },
+      complete: (results) => resolve(results.data),
+      error: (error: Error) =>
+        reject(new Error(`Failed to parse file: ${error.message}`)),
     });
   });
+
+  // Step 1: Process CSV data and check for file-level duplicates
+  for (const row of rows) {
+    const { Date: rawDate, Description, Amount, Currency } = row;
+    const dateObject = parseDate(rawDate);
+
+    if (!dateObject) {
+      schemaErrors.push({ row, message: "Invalid date format" });
+      continue;
+    }
+
+    const parsedAmount = parseFloat(Amount);
+    if (!Description || isNaN(parsedAmount) || !Currency) {
+      schemaErrors.push({
+        row,
+        message: "Invalid schema: Missing required fields or invalid amount",
+      });
+      continue;
+    }
+
+    // Track transactions for file-level duplicate checking
+    const uniqueKey = `${dateObject.toISOString()}-${Description}`;
+    if (seenTransactions.has(uniqueKey)) {
+      duplicates.push(row);
+      continue;
+    }
+    seenTransactions.add(uniqueKey);
+
+    const transaction = new Transctions();
+    transaction.Date = dateObject;
+    transaction.Description = Description;
+    transaction.Amount = parsedAmount;
+    transaction.Currency = Currency;
+
+    transactions.push(transaction);
+  }
+
+  // Step 2: Check for database-level duplicates in batches
+  const dbDuplicates = await em.find(Transctions, {
+    $or: transactions.map((t) => ({
+      Date: t.Date,
+      Description: t.Description,
+      isDeleted: false,
+    })),
+  });
+
+  const dbDuplicatesSet = new Set(
+    dbDuplicates.map((t) => `${t.Date.toISOString()}-${t.Description}`)
+  );
+
+  const finalValidTransactions = transactions.filter(
+    (t) => !dbDuplicatesSet.has(`${t.Date.toISOString()}-${t.Description}`)
+  );
+
+  dbDuplicates.forEach((t) => {
+    duplicates.push({
+      Date: t.Date.toISOString(),
+      Description: t.Description,
+      Amount: t.Amount.toString(),
+      Currency: t.Currency,
+    });
+  });
+
+  // Step 3: Flush valid transactions to the database
+  if (finalValidTransactions.length > 0) {
+    await em.persist(finalValidTransactions).flush();
+  }
+
+  return {
+    message:
+      finalValidTransactions.length > 0
+        ? "File processed successfully"
+        : "Empty file",
+    transactionsSaved: finalValidTransactions.length,
+    duplicates,
+    schemaErrors,
+  };
 };
