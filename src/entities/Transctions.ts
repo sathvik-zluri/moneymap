@@ -1,7 +1,12 @@
-import { Entity, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
 
+/* Added Partial Index with raw Sql query 
+  CREATE UNIQUE INDEX unique_transaction_not_deleted
+  ON "transction" ("date", "description")
+  WHERE "is_deleted" = false;
+  which solves the problem of soft delete in the database
+ */
 @Entity({ tableName: "transction" })
-@Unique({ properties: ["Date", "Description"] })
 export class Transctions {
   @PrimaryKey({ type: "serial" })
   id!: number;
@@ -12,7 +17,7 @@ export class Transctions {
   @Property({ type: "text" })
   Description!: string;
 
-  @Property({ type: "float" })
+  @Property({ type: "numeric(15, 2)" })
   Amount!: number;
 
   @Property({ type: "string" })
