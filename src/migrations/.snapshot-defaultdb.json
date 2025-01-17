@@ -36,12 +36,14 @@
         },
         "amount": {
           "name": "amount",
-          "type": "real",
+          "type": "numeric(10,0)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "float"
+          "precision": 10,
+          "scale": 0,
+          "mappedType": "decimal"
         },
         "currency": {
           "name": "currency",
@@ -87,17 +89,6 @@
       "name": "transction",
       "schema": "public",
       "indexes": [
-        {
-          "keyName": "transction_date_description_unique",
-          "columnNames": [
-            "date",
-            "description"
-          ],
-          "composite": true,
-          "constraint": true,
-          "primary": false,
-          "unique": true
-        },
         {
           "keyName": "transction_pkey",
           "columnNames": [
