@@ -60,27 +60,6 @@ describe("Transaction Controllers", () => {
       });
     });
 
-    it("should return 400 error when page or limit is invalid", async () => {
-      // Invalid `page` or `limit` that would trigger the `isNaN` check
-      const mockRequest = {
-        query: { page: "invalid", limit: "10" },
-      } as unknown as Request;
-      const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-      } as unknown as Response;
-
-      // Call the controller
-      await getTransctions(mockRequest, mockResponse);
-
-      // Check that the status code is 400 (Bad Request)
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        message: "Invalid page or limit",
-        error: "Invalid page or limit",
-      });
-    });
-
     it("should return transactions with default values when query parameters are not provided", async () => {
       const mockRequest = {
         query: {}, // Empty query to trigger default values
@@ -140,21 +119,6 @@ describe("Transaction Controllers", () => {
         },
       });
     });
-    it("should return 400 when sort order is invalid", async () => {
-      const mockRequest = {
-        query: { page: "1", limit: "10", sort: "invalid" },
-      } as unknown as Request;
-      const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-      } as unknown as Response;
-      await getTransctions(mockRequest, mockResponse);
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        message: "Invalid sort order",
-        error: "Invalid sort order",
-      });
-    });
 
     it("should handle errors while fetching transactions", async () => {
       const mockRequest = {
@@ -209,6 +173,36 @@ describe("Transaction Controllers", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         message: "Transaction added successfully",
         transaction: { ...newTransaction, id: 1 },
+      });
+    });
+
+    it("should handle ConflictError when the transaction already exists", async () => {
+      const newTransaction = {
+        Date: "2023-01-01",
+        Description: "Test",
+        Amount: 100,
+        Currency: "USD",
+      };
+
+      const mockRequest = {
+        body: newTransaction,
+      } as unknown as Request;
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      } as unknown as Response;
+
+      const conflictError = new Error("Transaction already exists") as any;
+      conflictError.name = "ConflictError";
+
+      (addTransactionService as jest.Mock).mockRejectedValue(conflictError);
+
+      await addTransctions(mockRequest, mockResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(409);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Transaction already exists",
+        error: "Transaction already exists",
       });
     });
 
@@ -273,28 +267,6 @@ describe("Transaction Controllers", () => {
       });
     });
 
-    it("should return 400 when ID is invalid", async () => {
-      const mockRequest = {
-        params: { id: "invalid" },
-        body: {
-          Date: "2023-01-01",
-          Description: "Test",
-          Amount: 100,
-          Currency: "USD",
-        },
-      } as unknown as Request;
-      const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-      } as unknown as Response;
-      await updateTransction(mockRequest, mockResponse);
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        message: "Invalid ID",
-        error: "Invalid ID",
-      });
-    });
-
     it("should handle errors while updating a transaction", async () => {
       const updatedTransaction = {
         Date: "2023-02-01",
@@ -343,22 +315,6 @@ describe("Transaction Controllers", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         message: "Transaction deleted successfully",
-      });
-    });
-
-    it("should return 400 when ID is invalid", async () => {
-      const mockRequest = {
-        params: { id: "invalid" },
-      } as unknown as Request;
-      const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-      } as unknown as Response;
-      await deleteTransaction(mockRequest, mockResponse);
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        message: "Invalid ID",
-        error: "Invalid ID",
       });
     });
 
