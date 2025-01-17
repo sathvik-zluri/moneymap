@@ -14,37 +14,17 @@ export const getTransctions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { page = 1, limit = 10, sort = "desc" } = req.query;
-
-    const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
-
-    if (isNaN(parsedPage) || isNaN(parsedLimit)) {
-      res.status(400).json({
-        message: "Invalid page or limit",
-        error: "Invalid page or limit",
-      });
-      return;
-    }
-
-    const validSortOrders = ["asc", "desc"];
-    if (!validSortOrders.includes(sort as string)) {
-      res.status(400).json({
-        message: "Invalid sort order",
-        error: "Invalid sort order",
-      });
-      return;
-    }
+    const { page, limit, sort } = req.query;
 
     // Call the service to get transactions
     const { transactions, totalCount, currentPage, totalPages } =
       await getTransactionsService({
-        page: parsedPage,
-        limit: parsedLimit,
+        page: Number(page),
+        limit: Number(limit),
         sort: sort as "asc" | "desc",
       });
 
-    // Return the fetched transactions along with the total count
+    // Return the fetched transactions along with pagination info
     res.status(200).json({
       data: transactions,
       pagination: {
@@ -82,15 +62,19 @@ export const addTransctions = async (
     res
       .status(201)
       .json({ message: "Transaction added successfully", transaction });
-
-    return;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error adding transaction:", error);
-    res.status(500).json({
-      message: "Failed to add transaction",
-      error: "Database error",
-    });
-    return;
+    if (error.name === "ConflictError") {
+      res.status(409).json({
+        message: "Transaction already exists",
+        error: error.message,
+      });
+    } else {
+      res.status(500).json({
+        message: "Failed to add transaction",
+        error: "Database error",
+      });
+    }
   }
 };
 
@@ -102,15 +86,6 @@ export const updateTransction = async (
   try {
     const { id } = req.params;
     const { Date: rawDate, Description, Amount, Currency } = req.body;
-
-    // Validate ID
-    if (!id || isNaN(Number(id))) {
-      res.status(400).json({
-        message: "Invalid ID",
-        error: "Invalid ID",
-      });
-      return;
-    }
 
     // Call the service to update the transaction
     const transaction = await updateTransactionService({
@@ -141,14 +116,6 @@ export const deleteTransaction = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-
-    if (!id || isNaN(Number(id))) {
-      res.status(400).json({
-        message: "Invalid ID",
-        error: "Invalid ID",
-      });
-      return;
-    }
 
     // Call the service to delete the transaction
     await deleteTransactionService(Number(id));
