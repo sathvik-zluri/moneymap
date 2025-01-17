@@ -8,5 +8,6 @@ export const connectDB = async () => {
     return orm;
   } catch (error) {
     console.error("📌 Could not connect to the database", error);
+    throw new Error("Database initialization failed");
   }
 };
