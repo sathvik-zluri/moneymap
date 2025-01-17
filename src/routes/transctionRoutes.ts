@@ -1,27 +1,49 @@
-import express, { Router } from 'express';
-import { getTransctions,addTransctions, deleteTransaction, updateTransction, uploadTransactions ,deleteRows } from '../controllers/transactionController';
-import { validateTransactionInput } from '../middleware/validateTransactionInput';
-import { uploadMiddleware } from '../middleware/uploadMiddleware';
-import { validateFileUpload } from '../middleware/validateFileUpload';
+import { Router } from "express";
+import {
+  getTransctions,
+  addTransctions,
+  deleteTransaction,
+  updateTransction,
+  uploadTransactions,
+} from "../controllers/transactionController";
+import { validateTransactionInput } from "../middleware/validateTransactionInput";
+import { uploadMiddleware } from "../middleware/uploadMiddleware";
+import { validateFileUpload } from "../middleware/validateFileUpload";
+import { getTransactionsValidator } from "../middleware/getTransctionsValidator";
+import { validateTransactionId } from "../middleware/validateTransactionId";
+import { validateTransactionExistence } from "../middleware/validateTransactionExistence";
 
-const router:Router = express.Router();
+const router = Router();
 
 //Fetching transctions with pagination & sorting
-router.get('/list',getTransctions);
+router.get("/list", getTransactionsValidator, getTransctions);
 
 //Uploading transctions throught csv
-router.post('/uploadcsv',uploadMiddleware,validateFileUpload,uploadTransactions);
+router.post(
+  "/uploadcsv",
+  uploadMiddleware,
+  validateFileUpload,
+  uploadTransactions
+);
 
 //Adding transctions with feature finding duplicalcy
 router.post("/add", validateTransactionInput, addTransctions);
 
 //Update transctions
-router.put("/update/:id",validateTransactionInput,updateTransction);
+router.put(
+  "/update/:id",
+  validateTransactionId,
+  validateTransactionInput,
+  validateTransactionExistence,
+  updateTransction
+);
 
 // Delete Transaction
-router.delete("/delete/:id", deleteTransaction);
-
-//Delete data
-router.delete("/delete-data", deleteRows);
+router.delete(
+  "/delete/:id",
+  validateTransactionId,
+  validateTransactionExistence,
+  deleteTransaction
+);
 
 export default router;
