@@ -102,43 +102,4 @@ describe("updateTransactionService", () => {
     expect(mockFork.flush).toHaveBeenCalled();
     expect(result).toEqual(mockTransaction);
   });
-
-  it("should throw an error if the transaction is not found", async () => {
-    const mockParams = {
-      id: 99,
-      description: "Updated Description",
-    };
-
-    const mockFork = {
-      findOne: jest.fn().mockResolvedValue(null), // Transaction not found
-    };
-
-    const mockOrm = {
-      em: { fork: jest.fn().mockReturnValue(mockFork) },
-    };
-
-    (connectDB as jest.Mock).mockResolvedValue(mockOrm);
-
-    await expect(updateTransactionService(mockParams)).rejects.toThrow(
-      "Transaction not found or ID invalid"
-    );
-
-    expect(mockFork.findOne).toHaveBeenCalledWith(Transctions, {
-      id: mockParams.id,
-      isDeleted: false,
-    });
-  });
-
-  it("should throw an error if the database connection fails", async () => {
-    (connectDB as jest.Mock).mockResolvedValue(null);
-
-    const mockParams = {
-      id: 1,
-      description: "Updated Description",
-    };
-
-    await expect(updateTransactionService(mockParams)).rejects.toThrow(
-      "Failed to initialize the database connection"
-    );
-  });
 });

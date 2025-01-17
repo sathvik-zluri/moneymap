@@ -1,10 +1,11 @@
-import { connectDB } from "../../src/data/database";
+import { getEntityManager } from "../../src/data/getEntityManger";
 import { addTransactionService } from "../../src/services/addTransactionService";
+import { Transctions } from "../../src/entities/Transctions";
 
-// Mock the `connectDB` function
-jest.mock("../../src/data/database", () => ({
-    connectDB: jest.fn(),
-  }));
+// Mock the `getEntityManager` function
+jest.mock("../../src/data/getEntityManger", () => ({
+  getEntityManager: jest.fn(),
+}));
 
 describe("addTransactionService", () => {
   afterEach(() => {
@@ -20,18 +21,20 @@ describe("addTransactionService", () => {
     };
 
     const mockFork = {
+      findOne: jest.fn().mockResolvedValue(null), // No duplicate found
       persist: jest.fn().mockReturnThis(),
       flush: jest.fn().mockResolvedValue(undefined),
     };
 
-    const mockOrm = {
-      em: { fork: jest.fn().mockReturnValue(mockFork) },
-    };
-
-    (connectDB as jest.Mock).mockResolvedValue(mockOrm);
+    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
 
     const result = await addTransactionService(mockTransaction);
 
+    expect(mockFork.findOne).toHaveBeenCalledWith(Transctions, {
+      Date: new Date(mockTransaction.rawDate),
+      Description: mockTransaction.description,
+      isDeleted: false,
+    });
     expect(mockFork.persist).toHaveBeenCalledWith(
       expect.objectContaining({
         Date: new Date(mockTransaction.rawDate),
@@ -51,40 +54,71 @@ describe("addTransactionService", () => {
     );
   });
 
-  it("should throw an error if the database connection fails", async () => {
-    (connectDB as jest.Mock).mockResolvedValue(null);
-
+  it("should throw a ConflictError if a duplicate transaction exists", async () => {
     const mockTransaction = {
       rawDate: "2025-01-12",
-      description: "Transaction",
+      description: "Duplicate Transaction",
       amount: 100,
       currency: "USD",
     };
 
-    await expect(addTransactionService(mockTransaction)).rejects.toThrow(
-      "Failed to initialize the database connection"
+    const mockFork = {
+      findOne: jest.fn().mockResolvedValue({ id: 1, ...mockTransaction }), // Duplicate found
+      persist: jest.fn(),
+      flush: jest.fn(),
+    };
+
+    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
+
+    await expect(addTransactionService(mockTransaction)).rejects.toThrowError(
+      expect.objectContaining({
+        name: "ConflictError",
+        message: "Transaction already exists",
+      })
     );
+
+    expect(mockFork.findOne).toHaveBeenCalledWith(Transctions, {
+      Date: new Date(mockTransaction.rawDate),
+      Description: mockTransaction.description,
+      isDeleted: false,
+    });
+    expect(mockFork.persist).not.toHaveBeenCalled();
+    expect(mockFork.flush).not.toHaveBeenCalled();
   });
 
   it("should throw an error if saving the transaction fails", async () => {
+    const mockTransaction = {
+      rawDate: "2025-01-12",
+      description: "Valid Transaction",
+      amount: 100,
+      currency: "USD",
+    };
+
     const mockFork = {
+      findOne: jest.fn().mockResolvedValue(null), // No duplicate found
       persist: jest.fn().mockReturnThis(),
       flush: jest.fn().mockRejectedValue(new Error("Database Error")),
     };
 
-    const mockOrm = {
-      em: { fork: jest.fn().mockReturnValue(mockFork) },
-    };
+    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
 
-    (connectDB as jest.Mock).mockResolvedValue(mockOrm);
+    await expect(addTransactionService(mockTransaction)).rejects.toThrow(
+      "Database Error"
+    );
 
-    const mockTransaction = {
-      rawDate: "2025-01-12",
-      description: "Transaction",
-      amount: 100,
-      currency: "USD",
-    };
-
-    await expect(addTransactionService(mockTransaction)).rejects.toThrow("Database Error");
+    expect(mockFork.findOne).toHaveBeenCalledWith(Transctions, {
+      Date: new Date(mockTransaction.rawDate),
+      Description: mockTransaction.description,
+      isDeleted: false,
+    });
+    expect(mockFork.persist).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Date: new Date(mockTransaction.rawDate),
+        Description: mockTransaction.description,
+        Amount: mockTransaction.amount,
+        Currency: mockTransaction.currency,
+      })
+    );
+    expect(mockFork.flush).toHaveBeenCalled();
   });
 });
