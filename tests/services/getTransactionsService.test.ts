@@ -64,6 +64,60 @@ describe("getTransactionsService", () => {
     });
   });
 
+  it("should filter transactions by custom date range when startDate and endDate are provided", async () => {
+    const mockParams = {
+      page: 1,
+      limit: 5,
+      sort: "asc" as const,
+      startDate: new Date("2025-01-01T00:00:00.000Z"),
+      endDate: new Date("2025-01-07T23:59:59.999Z"),
+    };
+
+    const mockTransactions = [
+      {
+        id: 1,
+        Description: "Transaction 1",
+        Date: new Date("2025-01-03T10:00:00.000Z"),
+      },
+      {
+        id: 2,
+        Description: "Transaction 2",
+        Date: new Date("2025-01-05T12:30:00.000Z"),
+      },
+    ];
+
+    const mockRepository = {
+      find: jest.fn().mockResolvedValue(mockTransactions),
+      count: jest.fn().mockResolvedValue(2), // Total count of transactions in the range
+    };
+
+    (getEntityManager as jest.Mock).mockResolvedValue({
+      getRepository: jest.fn().mockReturnValue(mockRepository),
+    });
+
+    const result = await getTransactionsService(mockParams);
+
+    expect(mockRepository.find).toHaveBeenCalledWith(
+      {
+        Date: { $gte: mockParams.startDate, $lte: mockParams.endDate },
+      },
+      {
+        orderBy: { Date: mockParams.sort },
+        limit: mockParams.limit,
+        offset: 0, // (page - 1) * limit = (1 - 1) * 5 = 0
+      }
+    );
+    expect(mockRepository.count).toHaveBeenCalledWith({
+      Date: { $gte: mockParams.startDate, $lte: mockParams.endDate },
+    });
+    expect(result).toEqual({
+      transactions: mockTransactions,
+      totalCount: 2,
+      currentPage: 1,
+      totalPages: 1, // totalCount / limit = 2 / 5 = 0.4 → rounded up to 1
+    });
+  });
+
   it("should handle a different page and limit", async () => {
     const mockParams = {
       page: 2,
