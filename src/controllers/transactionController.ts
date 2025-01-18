@@ -14,7 +14,7 @@ export const getTransctions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { page, limit, sort } = req.query;
+    const { page, limit, sort, frequency = "7" } = req.query;
 
     // Call the service to get transactions
     const { transactions, totalCount, currentPage, totalPages } =
@@ -22,6 +22,7 @@ export const getTransctions = async (
         page: Number(page),
         limit: Number(limit),
         sort: sort as "asc" | "desc",
+        frequency: String(frequency),
       });
 
     // Return the fetched transactions along with pagination info
