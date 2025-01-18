@@ -22,6 +22,11 @@ export const getTransactionsValidator = (
       "string.base": "Sort must be a string",
       "any.only": 'Sort must be one of "asc" or "desc"',
     }),
+    frequency: Joi.number().integer().min(1).optional().messages({
+      "number.base": "Frequency must be a number",
+      "number.integer": "Frequency must be an integer",
+      "number.min": "Frequency must be at least 1",
+    }),
   });
 
   const { error, value } = schema.validate(req.query, { abortEarly: false });
