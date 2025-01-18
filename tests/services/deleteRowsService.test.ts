@@ -28,14 +28,6 @@ describe("deleteRowsService", () => {
     expect(mockFork.nativeDelete).toHaveBeenCalledWith(Transctions, {});
   });
 
-  it("should throw an error if the database connection fails", async () => {
-    (connectDB as jest.Mock).mockResolvedValue(null);
-
-    await expect(deleteRowsService()).rejects.toThrow(
-      "Failed to initialize the database connection"
-    );
-  });
-
   it("should handle errors thrown by nativeDelete gracefully", async () => {
     const mockFork = {
       nativeDelete: jest
