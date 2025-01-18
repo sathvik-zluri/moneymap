@@ -27,6 +27,37 @@ export const getTransactionsValidator = (
       "number.integer": "Frequency must be an integer",
       "number.min": "Frequency must be at least 1",
     }),
+    startDate: Joi.date().iso().optional().messages({
+      "date.base": "StartDate must be a valid date",
+      "date.format": "StartDate must be in ISO 8601 format",
+    }),
+    endDate: Joi.date().iso().optional().messages({
+      "date.base": "EndDate must be a valid date",
+      "date.format": "EndDate must be in ISO 8601 format",
+    }),
+  }).custom((value, helpers) => {
+    // Ensure both startDate and endDate are provided together
+    if (
+      (value.startDate && !value.endDate) ||
+      (!value.startDate && value.endDate)
+    ) {
+      return helpers.error("any.custom", {
+        message: "Both startDate and endDate must be provided together",
+      });
+    }
+
+    // Ensure startDate is before endDate
+    if (
+      value.startDate &&
+      value.endDate &&
+      new Date(value.startDate) > new Date(value.endDate)
+    ) {
+      return helpers.error("any.custom", {
+        message: "StartDate must be before or equal to EndDate",
+      });
+    }
+
+    return value;
   });
 
   const { error, value } = schema.validate(req.query, { abortEarly: false });
