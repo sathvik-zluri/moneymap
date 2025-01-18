@@ -6,6 +6,8 @@ export interface GetTransactionsParams {
   limit: number;
   sort: "asc" | "desc";
   frequency?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 // types required for addTransactionsService.ts
