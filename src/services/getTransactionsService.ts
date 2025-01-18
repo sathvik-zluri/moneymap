@@ -29,13 +29,18 @@ export const getTransactionsService = async ({
   // Fork the EntityManager for isolated database interaction
   const em = await getEntityManager();
 
-  const transactions = await em.getRepository(Transctions).find(filter, {
-    orderBy: { Date: sort },
-    limit: take,
-    offset: skip,
-  });
+  const transactions = await em.getRepository(Transctions).find(
+    { ...filter, isDeleted: false }, //Soft Delete condtion
+    {
+      orderBy: { Date: sort },
+      limit: take,
+      offset: skip,
+    }
+  );
 
-  const totalCount = await em.getRepository(Transctions).count(filter);
+  const totalCount = await em
+    .getRepository(Transctions)
+    .count({ ...filter, isDeleted: false });
 
   // Calculate total pages
   const totalPages = Math.ceil(totalCount / limit);

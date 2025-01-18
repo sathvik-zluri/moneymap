@@ -46,6 +46,7 @@ describe("getTransactionsService", () => {
     expect(mockRepository.find).toHaveBeenCalledWith(
       {
         Date: { $gte: startDate },
+        isDeleted: false,
       },
       {
         orderBy: { Date: mockParams.sort },
@@ -55,6 +56,7 @@ describe("getTransactionsService", () => {
     );
     expect(mockRepository.count).toHaveBeenCalledWith({
       Date: { $gte: startDate },
+      isDeleted: false,
     });
     expect(result).toEqual({
       transactions: mockTransactions,
@@ -100,6 +102,7 @@ describe("getTransactionsService", () => {
     expect(mockRepository.find).toHaveBeenCalledWith(
       {
         Date: { $gte: mockParams.startDate, $lte: mockParams.endDate },
+        isDeleted: false,
       },
       {
         orderBy: { Date: mockParams.sort },
@@ -109,6 +112,7 @@ describe("getTransactionsService", () => {
     );
     expect(mockRepository.count).toHaveBeenCalledWith({
       Date: { $gte: mockParams.startDate, $lte: mockParams.endDate },
+      isDeleted: false,
     });
     expect(result).toEqual({
       transactions: mockTransactions,
@@ -147,6 +151,7 @@ describe("getTransactionsService", () => {
     expect(mockRepository.find).toHaveBeenCalledWith(
       {
         Date: { $gte: startDate },
+        isDeleted: false,
       },
       {
         orderBy: { Date: mockParams.sort },
@@ -156,6 +161,7 @@ describe("getTransactionsService", () => {
     );
     expect(mockRepository.count).toHaveBeenCalledWith({
       Date: { $gte: startDate },
+      isDeleted: false,
     });
     expect(result).toEqual({
       transactions: mockTransactions,
@@ -188,6 +194,7 @@ describe("getTransactionsService", () => {
     expect(mockRepository.find).toHaveBeenCalledWith(
       {
         Date: { $gte: startDate },
+        isDeleted: false,
       },
       {
         orderBy: { Date: mockParams.sort },
@@ -197,6 +204,7 @@ describe("getTransactionsService", () => {
     );
     expect(mockRepository.count).toHaveBeenCalledWith({
       Date: { $gte: startDate },
+      isDeleted: false,
     });
     expect(result).toEqual({
       transactions: [],
