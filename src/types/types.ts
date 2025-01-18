@@ -5,6 +5,7 @@ export interface GetTransactionsParams {
   page: number;
   limit: number;
   sort: "asc" | "desc";
+  frequency?: string;
 }
 
 // types required for addTransactionsService.ts
