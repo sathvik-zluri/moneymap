@@ -1,11 +1,17 @@
 import { Transctions } from "../../src/entities/Transctions";
 import { getTransactionsService } from "../../src/services/getTransactionsService";
 import { getEntityManager } from "../../src/data/getEntityManger";
+import moment from "moment";
 
 // Mock the `getEntityManager` function
 jest.mock("../../src/data/getEntityManger", () => ({
   getEntityManager: jest.fn(),
 }));
+
+jest.mock("moment", () => {
+  const originalMoment = jest.requireActual("moment");
+  return jest.fn(() => originalMoment("2025-01-13T15:08:56.592Z"));
+});
 
 describe("getTransactionsService", () => {
   afterEach(() => {
@@ -24,25 +30,32 @@ describe("getTransactionsService", () => {
       { id: 2, Description: "Transaction 2", Date: new Date() },
     ];
 
-    const mockFork = {
+    const mockRepository = {
       find: jest.fn().mockResolvedValue(mockTransactions),
       count: jest.fn().mockResolvedValue(10), // Total count of transactions
     };
 
-    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
+    (getEntityManager as jest.Mock).mockResolvedValue({
+      getRepository: jest.fn().mockReturnValue(mockRepository),
+    });
 
     const result = await getTransactionsService(mockParams);
 
-    expect(mockFork.find).toHaveBeenCalledWith(
-      Transctions,
-      { isDeleted: false },
+    const startDate = moment().subtract(7, "days").toDate();
+
+    expect(mockRepository.find).toHaveBeenCalledWith(
+      {
+        Date: { $gte: startDate },
+      },
       {
         orderBy: { Date: mockParams.sort },
         limit: mockParams.limit,
         offset: 0, // (page - 1) * limit = (1 - 1) * 5 = 0
       }
     );
-    expect(mockFork.count).toHaveBeenCalledWith(Transctions);
+    expect(mockRepository.count).toHaveBeenCalledWith({
+      Date: { $gte: startDate },
+    });
     expect(result).toEqual({
       transactions: mockTransactions,
       totalCount: 10,
@@ -64,25 +77,32 @@ describe("getTransactionsService", () => {
       { id: 6, Description: "Transaction 6", Date: new Date() },
     ];
 
-    const mockFork = {
+    const mockRepository = {
       find: jest.fn().mockResolvedValue(mockTransactions),
       count: jest.fn().mockResolvedValue(20), // Total count of transactions
     };
 
-    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
+    (getEntityManager as jest.Mock).mockResolvedValue({
+      getRepository: jest.fn().mockReturnValue(mockRepository),
+    });
 
     const result = await getTransactionsService(mockParams);
 
-    expect(mockFork.find).toHaveBeenCalledWith(
-      Transctions,
-      { isDeleted: false },
+    const startDate = moment().subtract(7, "days").toDate();
+
+    expect(mockRepository.find).toHaveBeenCalledWith(
+      {
+        Date: { $gte: startDate },
+      },
       {
         orderBy: { Date: mockParams.sort },
         limit: mockParams.limit,
         offset: 3, // (page - 1) * limit = (2 - 1) * 3 = 3
       }
     );
-    expect(mockFork.count).toHaveBeenCalledWith(Transctions);
+    expect(mockRepository.count).toHaveBeenCalledWith({
+      Date: { $gte: startDate },
+    });
     expect(result).toEqual({
       transactions: mockTransactions,
       totalCount: 20,
@@ -98,25 +118,32 @@ describe("getTransactionsService", () => {
       sort: "asc" as const,
     };
 
-    const mockFork = {
+    const mockRepository = {
       find: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(0), // Total count of transactions
     };
 
-    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
+    (getEntityManager as jest.Mock).mockResolvedValue({
+      getRepository: jest.fn().mockReturnValue(mockRepository),
+    });
 
     const result = await getTransactionsService(mockParams);
 
-    expect(mockFork.find).toHaveBeenCalledWith(
-      Transctions,
-      { isDeleted: false },
+    const startDate = moment().subtract(7, "days").toDate();
+
+    expect(mockRepository.find).toHaveBeenCalledWith(
+      {
+        Date: { $gte: startDate },
+      },
       {
         orderBy: { Date: mockParams.sort },
         limit: mockParams.limit,
         offset: 0, // (page - 1) * limit = (1 - 1) * 5 = 0
       }
     );
-    expect(mockFork.count).toHaveBeenCalledWith(Transctions);
+    expect(mockRepository.count).toHaveBeenCalledWith({
+      Date: { $gte: startDate },
+    });
     expect(result).toEqual({
       transactions: [],
       totalCount: 0,
