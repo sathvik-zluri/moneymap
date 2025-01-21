@@ -1,10 +1,15 @@
 import { getEntityManager } from "../../src/data/getEntityManger";
 import { addTransactionService } from "../../src/services/addTransactionService";
 import { Transctions } from "../../src/entities/Transctions";
+import { convertCurrency } from "../../src/utils/exchangeRate";
 
 // Mock the `getEntityManager` function
 jest.mock("../../src/data/getEntityManger", () => ({
   getEntityManager: jest.fn(),
+}));
+
+jest.mock("../../src/utils/exchangeRate", () => ({
+  convertCurrency: jest.fn(),
 }));
 
 describe("addTransactionService", () => {
@@ -20,6 +25,9 @@ describe("addTransactionService", () => {
       currency: "USD",
     };
 
+    const mockConvertedCurrency = { amountInr: 7500 }; // Mock conversion result
+    (convertCurrency as jest.Mock).mockResolvedValue(mockConvertedCurrency); // Mock convertCurrency
+
     const mockFork = {
       findOne: jest.fn().mockResolvedValue(null), // No duplicate found
       persist: jest.fn().mockReturnThis(),
@@ -30,6 +38,11 @@ describe("addTransactionService", () => {
 
     const result = await addTransactionService(mockTransaction);
 
+    expect(convertCurrency).toHaveBeenCalledWith(
+      mockTransaction.rawDate,
+      mockTransaction.currency,
+      mockTransaction.amount
+    );
     expect(mockFork.findOne).toHaveBeenCalledWith(Transctions, {
       Date: new Date(mockTransaction.rawDate),
       Description: mockTransaction.description,
@@ -41,6 +54,7 @@ describe("addTransactionService", () => {
         Description: mockTransaction.description,
         Amount: mockTransaction.amount,
         Currency: mockTransaction.currency,
+        AmountINR: mockConvertedCurrency.amountInr, // INR amount is set
       })
     );
     expect(mockFork.flush).toHaveBeenCalled();
@@ -50,6 +64,7 @@ describe("addTransactionService", () => {
         Description: mockTransaction.description,
         Amount: mockTransaction.amount,
         Currency: mockTransaction.currency,
+        AmountINR: mockConvertedCurrency.amountInr, // INR amount is returned
       })
     );
   });
@@ -84,6 +99,58 @@ describe("addTransactionService", () => {
     });
     expect(mockFork.persist).not.toHaveBeenCalled();
     expect(mockFork.flush).not.toHaveBeenCalled();
+  });
+
+  it("should successfully add a transaction with converted INR amount", async () => {
+    const mockTransaction = {
+      rawDate: "2025-01-12",
+      description: "Valid Transaction",
+      amount: 100,
+      currency: "USD",
+    };
+
+    const mockConvertedCurrency = { amountInr: 7500 }; // Mock conversion result
+    (convertCurrency as jest.Mock).mockResolvedValue(mockConvertedCurrency);
+
+    const mockFork = {
+      findOne: jest.fn().mockResolvedValue(null), // No duplicate found
+      persist: jest.fn().mockReturnThis(),
+      flush: jest.fn().mockResolvedValue(undefined),
+    };
+
+    (getEntityManager as jest.Mock).mockResolvedValue(mockFork);
+
+    const result = await addTransactionService(mockTransaction);
+
+    expect(convertCurrency).toHaveBeenCalledWith(
+      mockTransaction.rawDate,
+      mockTransaction.currency,
+      mockTransaction.amount
+    );
+    expect(mockFork.findOne).toHaveBeenCalledWith(Transctions, {
+      Date: new Date(mockTransaction.rawDate),
+      Description: mockTransaction.description,
+      isDeleted: false,
+    });
+    expect(mockFork.persist).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Date: new Date(mockTransaction.rawDate),
+        Description: mockTransaction.description,
+        Amount: mockTransaction.amount,
+        Currency: mockTransaction.currency,
+        AmountINR: mockConvertedCurrency.amountInr, // Ensure INR amount is set
+      })
+    );
+    expect(mockFork.flush).toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        Date: new Date(mockTransaction.rawDate),
+        Description: mockTransaction.description,
+        Amount: mockTransaction.amount,
+        Currency: mockTransaction.currency,
+        AmountINR: mockConvertedCurrency.amountInr, // Ensure INR amount is returned
+      })
+    );
   });
 
   it("should throw an error if saving the transaction fails", async () => {
