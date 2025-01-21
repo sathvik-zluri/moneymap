@@ -17,13 +17,13 @@
         },
         "date": {
           "name": "date",
-          "type": "timestamptz",
+          "type": "date",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": 0,
+          "mappedType": "date"
         },
         "description": {
           "name": "description",
@@ -54,6 +54,17 @@
           "nullable": false,
           "length": 255,
           "mappedType": "string"
+        },
+        "amount_inr": {
+          "name": "amount_inr",
+          "type": "numeric(10,0)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "precision": 10,
+          "scale": 0,
+          "mappedType": "decimal"
         },
         "created_at": {
           "name": "created_at",
