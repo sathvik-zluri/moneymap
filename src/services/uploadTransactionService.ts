@@ -3,6 +3,8 @@ import Papa from "papaparse";
 import { parseDate } from "../utils/utilityFunctions";
 import { TransactionRow, UploadResult } from "../types/types";
 import { getEntityManager } from "../data/getEntityManger";
+import { date } from "joi";
+import { convertCurrency } from "../utils/exchangeRate";
 
 export const uploadTransactionService = async (
   fileBuffer: Buffer
@@ -90,11 +92,20 @@ export const uploadTransactionService = async (
       Description: t.Description,
       Amount: t.Amount.toString(),
       Currency: t.Currency,
+      AmountINR: t.AmountINR.toString(),
     });
   });
 
   // Step 3: Flush valid transactions to the database
   if (finalValidTransactions.length > 0) {
+    for (const transaction of finalValidTransactions) {
+      const { amountInr } = await convertCurrency(
+        transaction.Date.toISOString().slice(0, 10),
+        transaction.Currency,
+        transaction.Amount
+      );
+      transaction.AmountINR = amountInr;
+    }
     await em.persist(finalValidTransactions).flush();
   }
 
