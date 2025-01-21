@@ -60,6 +60,65 @@ describe("Transaction Controllers", () => {
       });
     });
 
+    it("should return transactions filtered by custom date range and frequency when frequency is provided", async () => {
+      const mockRequest = {
+        query: {
+          page: "1",
+          limit: "10",
+          sort: "asc",
+          frequency: "7", // Frequency provided
+          startDate: "2025-01-01T00:00:00.000Z",
+          endDate: "2025-01-07T23:59:59.999Z",
+        },
+      } as unknown as Request;
+
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      const mockTransactions = [
+        {
+          id: 1,
+          Description: "Transaction 1",
+          Date: new Date("2025-01-03T10:00:00.000Z"),
+        },
+        {
+          id: 2,
+          Description: "Transaction 2",
+          Date: new Date("2025-01-05T12:30:00.000Z"),
+        },
+      ];
+
+      (getTransactionsService as jest.Mock).mockResolvedValue({
+        transactions: mockTransactions,
+        totalCount: 2,
+        currentPage: 1,
+        totalPages: 1,
+      });
+
+      await getTransctions(mockRequest, mockResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        data: mockTransactions,
+        pagination: {
+          currentPage: 1,
+          totalCount: 2,
+          totalPages: 1,
+        },
+      });
+
+      expect(getTransactionsService).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        sort: "asc",
+        frequency: "7", // Ensure the frequency is passed as a string
+        startDate: new Date("2025-01-01T00:00:00.000Z"),
+        endDate: new Date("2025-01-07T23:59:59.999Z"),
+      });
+    });
+
     it("should return transactions filtered by custom date range when startDate and endDate are provided", async () => {
       const mockRequest = {
         query: {
@@ -112,7 +171,7 @@ describe("Transaction Controllers", () => {
         page: 1,
         limit: 10,
         sort: "asc",
-        frequency: "7",
+        frequency: undefined, // Match actual behavior
         startDate: new Date("2025-01-01T00:00:00.000Z"),
         endDate: new Date("2025-01-07T23:59:59.999Z"),
       });

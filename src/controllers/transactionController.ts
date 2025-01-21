@@ -14,14 +14,7 @@ export const getTransctions = async (
   res: Response
 ): Promise<void> => {
   try {
-    const {
-      page,
-      limit,
-      sort,
-      frequency = "7",
-      startDate,
-      endDate,
-    } = req.query;
+    const { page, limit, sort, frequency, startDate, endDate } = req.query;
 
     // Call the service to get transactions
     const { transactions, totalCount, currentPage, totalPages } =
@@ -29,7 +22,7 @@ export const getTransctions = async (
         page: Number(page),
         limit: Number(limit),
         sort: sort as "asc" | "desc",
-        frequency: String(frequency),
+        frequency: frequency ? String(frequency) : undefined,
         startDate: startDate ? new Date(startDate as string) : undefined,
         endDate: endDate ? new Date(endDate as string) : undefined,
       });
