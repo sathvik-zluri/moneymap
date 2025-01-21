@@ -38,6 +38,7 @@ export interface TransactionRow {
   Description: string; // Matches the entity's "descripition" field
   Amount: string; // Raw amount from the CSV (to be converted to a number)
   Currency: string; // Matches the entity's "currency" field
+  AmountINR?: string; // Optional: amount in INR (to be calculated)
 }
 
 export interface UploadResult {
