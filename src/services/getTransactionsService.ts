@@ -7,7 +7,7 @@ export const getTransactionsService = async ({
   page,
   limit,
   sort,
-  frequency = "7",
+  frequency,
   startDate,
   endDate,
 }: GetTransactionsParams) => {
