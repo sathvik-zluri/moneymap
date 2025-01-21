@@ -30,7 +30,7 @@ const mikroOrmConfig: Options = {
   driverOptions: {
     connection: {
       ssl: {
-        ca: fs.readFileSync(sslCert || ""),
+        ca: sslCert,
       },
       connectionTimeoutMillis: 2000, // Timeout in milliseconds for a connection attempt
     },
