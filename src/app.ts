@@ -10,7 +10,12 @@ config();
 export const app = express();
 
 // Use the CORS middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  })
+);
 
 // Middleware
 app.use(express.json());
