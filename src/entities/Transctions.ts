@@ -11,7 +11,7 @@ export class Transctions {
   @PrimaryKey({ type: "serial" })
   id!: number;
 
-  @Property({ type: "timestamp" })
+  @Property({ type: "date" })
   Date!: Date;
 
   @Property({ type: "text" })
@@ -22,6 +22,9 @@ export class Transctions {
 
   @Property({ type: "string" })
   Currency!: string;
+
+  @Property({ type: "numeric(15, 2)" })
+  AmountINR!: number;
 
   @Property({ onCreate: () => new Date() })
   createdAt!: Date;
