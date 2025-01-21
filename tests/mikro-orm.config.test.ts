@@ -7,7 +7,8 @@ jest.mock("../mikro-orm.config", () => {
         path: "src/migrations",
       },
       entities: [jest.fn()], // Mocked Transctions entity
-      clientUrl: "postgres://test_user:test_password@localhost:5432/test_db?sslmode=require",
+      clientUrl:
+        "postgres://test_user:test_password@localhost:5432/test_db?sslmode=require",
       debug: true,
       logger: jest.fn(), // Mocked logger function
       driverOptions: {
@@ -32,7 +33,8 @@ describe("MikroORM Configuration", () => {
         path: "src/migrations", // Mocked migrations path
       },
       entities: [expect.any(Function)], // Mocked Transctions entity
-      clientUrl: "postgres://test_user:test_password@localhost:5432/test_db?sslmode=require",
+      clientUrl:
+        "postgres://test_user:test_password@localhost:5432/test_db?sslmode=require",
       debug: true, // Debug enabled for development environment
       logger: expect.any(Function), // Mocked logger function
       driverOptions: {
