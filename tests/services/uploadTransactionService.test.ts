@@ -202,13 +202,14 @@ describe("uploadTransactionService", () => {
       `;
     const buffer = Buffer.from(csvContent, "utf-8");
 
-    // Mock the database query to return an existing transaction
+    // Mock the database query to return an existing transaction with AmountINR
     mockEm.find.mockResolvedValueOnce([
       {
         Date: new Date("2023-01-01"),
         Description: "Test Transaction",
         Amount: 100,
         Currency: "USD",
+        AmountINR: 7400, // Mocked AmountINR for testing
       },
     ]);
 
@@ -238,6 +239,7 @@ describe("uploadTransactionService", () => {
           Description: "Test Transaction",
           Amount: "100",
           Currency: "USD",
+          AmountINR: "7400", // Added AmountINR as a string
         },
       ],
       schemaErrors: [],
