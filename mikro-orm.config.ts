@@ -37,8 +37,8 @@ const mikroOrmConfig: Options = {
   },
   pool: {
     min: 2, // Minimum number of connections in the pool
-    max: 10, // Maximum number of connections in the pool
-    idleTimeoutMillis: 30000, // Time in milliseconds before idle connections are closed
+    max: 20, // Maximum number of connections in the pool
+    idleTimeoutMillis: 15000, // Time in milliseconds before idle connections are closed
   },
 };
 
