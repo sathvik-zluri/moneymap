@@ -25,7 +25,7 @@ const mikroOrmConfig: Options = {
   },
   entities: [Transctions], // Entities representing the database schema (models)
   clientUrl: connectionString, // Database connection string
-  debug: process.env.NODE_ENV === "development", // Enabled only in development mode to observe the SQL queries generated for the defined entities
+  debug: false, // Enabled only in development mode to observe the SQL queries generated for the defined entities
   logger: (message: string) => {}, // Disable logging
   driverOptions: {
     connection: {
