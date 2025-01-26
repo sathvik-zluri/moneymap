@@ -67,7 +67,12 @@ export const addTransctions = async (
       .json({ message: "Transaction added successfully", transaction });
   } catch (error: any) {
     console.error("Error adding transaction:", error);
-    if (error.name === "ConflictError") {
+    if (error.name === "AxiosErrorCurrency") {
+      res.status(error.statusCode || 500).json({
+        message: "Failed to convert currency",
+        error: error.message,
+      });
+    } else if (error.name === "ConflictError") {
       res.status(409).json({
         message: "Transaction already exists",
         error: error.message,
@@ -103,12 +108,19 @@ export const updateTransction = async (
       message: "Transaction updated successfully",
       transaction,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating transaction:", error);
-    res.status(500).json({
-      message: "Failed to update transaction",
-      error: "Database error",
-    });
+    if (error.name === "AxiosErrorCurrency") {
+      res.status(error.statusCode || 500).json({
+        message: "Failed to convert currency",
+        error: error.message,
+      });
+    } else {
+      res.status(500).json({
+        message: "Failed to update transaction",
+        error: "Database error",
+      });
+    }
   }
 };
 
@@ -151,12 +163,19 @@ export const uploadTransactions = async (
       duplicates: result.duplicates,
       schemaErrors: result.schemaErrors,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error processing file:", error);
-    res.status(500).json({
-      message: "Failed to process file",
-      error: "File processing error",
-    });
+    if (error.name === "AxiosErrorCurrency") {
+      res.status(error.statusCode || 500).json({
+        message: "Failed to convert currency for some rows",
+        error: error.message,
+      });
+    } else {
+      res.status(500).json({
+        message: "Failed to process file",
+        error: "File processing error",
+      });
+    }
   }
 };
 
