@@ -27,18 +27,26 @@ const mikroOrmConfig: Options = {
   clientUrl: connectionString, // Database connection string
   debug: false, // Enabled only in development mode to observe the SQL queries generated for the defined entities
   logger: (message: string) => {}, // Disable logging
+  // driverOptions: {
+  //   connection: {
+  //     ssl: {
+  //       // ca: sslCert,
+  //       rejectUnauthorized: false,
+  //     },
+  //     connectionTimeoutMillis: 2000, // Timeout in milliseconds for a connection attempt
+  //   },
+  // },
+  // pool: {
+  //   min: 2, // Minimum number of connections in the pool
+  //   max: 20, // Maximum number of connections in the pool
+  //   idleTimeoutMillis: 15000, // Time in milliseconds before idle connections are closed
+  // },
   driverOptions: {
     connection: {
       ssl: {
-        ca: sslCert,
+        rejectUnauthorized: false,
       },
-      connectionTimeoutMillis: 2000, // Timeout in milliseconds for a connection attempt
     },
-  },
-  pool: {
-    min: 2, // Minimum number of connections in the pool
-    max: 20, // Maximum number of connections in the pool
-    idleTimeoutMillis: 15000, // Time in milliseconds before idle connections are closed
   },
 };
 
