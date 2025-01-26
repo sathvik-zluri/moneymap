@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 export const convertCurrency = async (
   date: string,
@@ -15,7 +15,24 @@ export const convertCurrency = async (
 
     return { amountInr };
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to convert currency");
+    if (axios.isAxiosError(error)) {
+      // Handle Axios errors specifically
+      const statusCode = error.response?.status || 500;
+      const errorMessage =
+        error.response?.data?.error || "Failed to convert currency";
+
+      console.error(`AxiosError: ${errorMessage} (status: ${statusCode})`);
+
+      // Throw a structured error with the status code and message
+      throw {
+        name: "AxiosErrorCurrency",
+        statusCode,
+        message: errorMessage,
+      };
+    } else {
+      // Handle non-Axios errors (unlikely here but included for safety)
+      console.error("Unexpected error:", error);
+      throw new Error("Unexpected error occurred during currency conversion");
+    }
   }
 };
