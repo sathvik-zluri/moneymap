@@ -3,8 +3,8 @@ import Papa from "papaparse";
 import { parseDate } from "../utils/utilityFunctions";
 import { TransactionRow, UploadResult } from "../types/types";
 import { getEntityManager } from "../data/getEntityManger";
-import { date } from "joi";
 import { convertCurrency } from "../utils/exchangeRate";
+import { specialChars } from "../constants/specialChar";
 
 export const uploadTransactionService = async (
   fileBuffer: Buffer
@@ -42,9 +42,35 @@ export const uploadTransactionService = async (
       schemaErrors.push({ row, message: "Invalid date format" });
       continue;
     }
+    // Trim the description and replace multiple spaces with a single space
+    const trimmedDescription = Description.trim().replace(/\s+/g, " ");
+
+    // Check if description contains any special characters
+    const invalidChar = specialChars.find((char) =>
+      trimmedDescription.includes(char)
+    );
+    if (invalidChar) {
+      schemaErrors.push({
+        row,
+        message: `Description contains an invalid special character: '${invalidChar}'`,
+      });
+      continue;
+    }
+
+    // If description is empty after trimming, handle as invalid
+    if (!trimmedDescription) {
+      schemaErrors.push({
+        row,
+        message: "Description cannot be empty after trimming",
+      });
+      continue;
+    }
+
+    // Update the row with the cleaned description
+    row.Description = trimmedDescription;
 
     const parsedAmount = parseFloat(Amount);
-    if (!Description || isNaN(parsedAmount) || !Currency) {
+    if (isNaN(parsedAmount) || !Currency) {
       schemaErrors.push({
         row,
         message: "Invalid schema: Missing required fields or invalid amount",
@@ -62,7 +88,7 @@ export const uploadTransactionService = async (
 
     const transaction = new Transctions();
     transaction.Date = dateObject;
-    transaction.Description = Description;
+    transaction.Description = row.Description;
     transaction.Amount = parsedAmount;
     transaction.Currency = Currency;
 
@@ -96,16 +122,45 @@ export const uploadTransactionService = async (
     });
   });
 
-  // Step 3: Flush valid transactions to the database
+  // Step 3: Fetch currency conversion for all transactions in batch
   if (finalValidTransactions.length > 0) {
-    for (const transaction of finalValidTransactions) {
-      const { amountInr } = await convertCurrency(
-        transaction.Date.toISOString().slice(0, 10),
-        transaction.Currency,
-        transaction.Amount
-      );
-      transaction.AmountINR = amountInr;
-    }
+    // Create a Map for unique conversion requests (date + currency + amount)
+    const conversionRequests = finalValidTransactions.map((transaction) => ({
+      date: transaction.Date.toISOString().slice(0, 10),
+      currency: transaction.Currency,
+      amount: transaction.Amount,
+    }));
+
+    // Fetch all conversion rates for the unique requests using Promise.all
+    const conversionResults = await Promise.all(
+      conversionRequests.map((request) =>
+        convertCurrency(request.date, request.currency, request.amount)
+      )
+    );
+
+    // Store the results in a Map for efficient lookup by key (date + currency + amount)
+    const conversionMap = new Map(
+      conversionResults.map((result, index) => {
+        const request = conversionRequests[index];
+        return [
+          `${request.date}-${request.currency}-${request.amount}`,
+          result.amountInr,
+        ];
+      })
+    );
+
+    // Assign the conversion rates to the corresponding transactions
+    finalValidTransactions.forEach((transaction) => {
+      const key = `${transaction.Date.toISOString().slice(0, 10)}-${
+        transaction.Currency
+      }-${transaction.Amount}`;
+      const amountInr = conversionMap.get(key);
+      if (amountInr !== undefined) {
+        transaction.AmountINR = amountInr;
+      }
+    });
+
+    // Step 4: Persist valid transactions to the database
     await em.persist(finalValidTransactions).flush();
   }
 
