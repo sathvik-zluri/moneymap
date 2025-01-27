@@ -85,6 +85,59 @@ describe("validateTransactionInput", () => {
     expect(mockNext).not.toHaveBeenCalled();
   });
 
+  it("should return validation error if Description is empty after trimming", () => {
+    mockReq.body = {
+      Date: "2025-01-12",
+      Description: "   ", // This should be trimmed and become empty
+      Amount: 100.0,
+      Currency: "USD",
+    };
+
+    validateTransactionInput(mockReq as Request, mockRes as Response, mockNext);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      message: "Validation error",
+      errors: ["Description cannot be empty"],
+    });
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+  it("should return validation error if Description contains special characters", () => {
+    // Test with a special character
+    mockReq.body = {
+      Date: "2025-01-12",
+      Description: "Invalid description\u200B", // Contains Zero Width Space
+      Amount: 100.0,
+      Currency: "USD",
+    };
+
+    validateTransactionInput(mockReq as Request, mockRes as Response, mockNext);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      message: "Validation error",
+      errors: ["Invalid 'Description'. Contains special characters."],
+    });
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+  it("should return trimmed Description if it passes the custom validation", () => {
+    mockReq.body = {
+      Date: "2025-01-12",
+      Description: "  Valid description  ",
+      Amount: 100.0,
+      Currency: "USD",
+    };
+
+    validateTransactionInput(mockReq as Request, mockRes as Response, mockNext);
+
+    expect(mockRes.status).not.toHaveBeenCalled();
+    expect(mockRes.json).not.toHaveBeenCalled();
+    expect(mockNext).toHaveBeenCalled();
+    expect(mockReq.body.Description).toBe("Valid description");
+  });
+
   it("should return validation error if Amount is not a positive number", () => {
     mockReq.body = {
       Date: "2025-01-12",

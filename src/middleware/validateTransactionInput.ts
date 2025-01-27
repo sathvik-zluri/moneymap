@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+import { specialChars } from "../constants/specialChar";
 import Joi from "joi";
+
+// Create a regex that matches any of the special characters
+const specialCharsRegex = new RegExp(`[${specialChars.join("")}]`);
 
 export const validateTransactionInput = (
   req: Request,
@@ -15,11 +19,18 @@ export const validateTransactionInput = (
         "date.max": "Date cannot be in the future",
         "any.required": "Date is required",
       }),
-    Description: Joi.string().trim().required().messages({
-      "string.base": "Description must be a string",
-      "string.empty": "Description cannot be empty",
-      "any.required": "Description is required",
-    }),
+    Description: Joi.string()
+      .trim()
+      .required()
+      .replace(/\s+/g, " ") // Replace multiple spaces with a single space
+      .pattern(specialCharsRegex, { invert: true }) // Ensure no special chars are present
+      .messages({
+        "string.base": "Description must be a string",
+        "string.empty": "Description cannot be empty",
+        "string.pattern.invert.base":
+          "Invalid 'Description'. Contains special characters.",
+        "any.required": "Description is required",
+      }),
     Amount: Joi.number()
       .positive()
       .precision(2) // Ensures the number has 2 decimal places
@@ -40,7 +51,7 @@ export const validateTransactionInput = (
   });
 
   //abortEarly: false will return all the validation errors found
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false });
 
   if (error) {
     res.status(400).json({
@@ -49,6 +60,8 @@ export const validateTransactionInput = (
     });
     return; // Stop further execution if validation fails
   }
+
+  req.body.Description = value.Description; // This is where the trimmed value is passed down
 
   next();
 };
