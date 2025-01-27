@@ -140,6 +140,97 @@ describe("uploadTransactionService", () => {
     parseDateMock.mockRestore();
   });
 
+  it("should handle invalid special characters in the description", async () => {
+    const csvContent = `
+      Date,Description,Amount,Currency
+      01-01-2023,Invalid description\u200B,100,USD
+    `;
+    const buffer = Buffer.from(csvContent, "utf-8");
+
+    mockEm.find.mockResolvedValue([]); // No duplicates
+
+    (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
+      options.complete({
+        data: [
+          {
+            Date: "01-01-2023",
+            Description: "Invalid description\u200B",
+            Amount: "100",
+            Currency: "USD",
+          },
+        ],
+        errors: [],
+      });
+    });
+
+    const result = await uploadTransactionService(buffer);
+
+    expect(result).toEqual({
+      message: "Empty file",
+      transactionsSaved: 0,
+      duplicates: [],
+      schemaErrors: [
+        {
+          row: {
+            Date: "01-01-2023",
+            Description: "Invalid description\u200B",
+            Amount: "100",
+            Currency: "USD",
+          },
+          message:
+            "Description contains an invalid special character: '\u200B'",
+        },
+      ],
+    });
+    expect(mockEm.persist).not.toHaveBeenCalled();
+    expect(mockEm.flush).not.toHaveBeenCalled();
+  });
+
+  it("should handle rows with missing fields or invalid amount", async () => {
+    const csvContent = `
+      Date,Description,Amount,Currency
+      01-01-2023,Test,invalidAmount,USD
+    `;
+    const buffer = Buffer.from(csvContent, "utf-8");
+
+    mockEm.find.mockResolvedValue([]); // No duplicates
+
+    (Papa.parse as jest.Mock).mockImplementationOnce((_, options: any) => {
+      options.complete({
+        data: [
+          {
+            Date: "01-01-2023",
+            Description: "Test",
+            Amount: "invalidAmount",
+            Currency: "USD",
+          },
+        ],
+        errors: [],
+      });
+    });
+
+    const result = await uploadTransactionService(buffer);
+
+    expect(result).toEqual({
+      message: "Empty file",
+      transactionsSaved: 0,
+      duplicates: [],
+      schemaErrors: [
+        {
+          row: {
+            Date: "01-01-2023",
+            Description: "Test",
+            Amount: "invalidAmount",
+            Currency: "USD",
+          },
+          message: "Invalid schema: Missing required fields or invalid amount",
+        },
+      ],
+    });
+    expect(mockEm.persist).not.toHaveBeenCalled();
+    expect(mockEm.flush).not.toHaveBeenCalled();
+  });
+
   it("should detect and track file-level duplicates", async () => {
     const csvContent = `
         Date,Description,Amount,Currency
@@ -289,7 +380,7 @@ describe("uploadTransactionService", () => {
             Amount: "100",
             Currency: "USD",
           },
-          message: "Invalid schema: Missing required fields or invalid amount",
+          message: "Description cannot be empty after trimming",
         },
       ],
     });
