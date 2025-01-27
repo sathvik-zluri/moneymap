@@ -323,6 +323,37 @@ describe("Transaction Controllers", () => {
       });
     });
 
+    it("should handle AxiosErrorCurrency while adding a transaction", async () => {
+      const newTransaction = {
+        Date: "2013-12-31",
+        Description: "Test",
+        Amount: 100,
+        Currency: "USD",
+      };
+
+      const mockRequest = {
+        body: newTransaction,
+      } as unknown as Request;
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      } as unknown as Response;
+
+      const axiosError = new Error("Currency conversion failed") as any;
+      axiosError.name = "AxiosErrorCurrency";
+      axiosError.statusCode = 400;
+
+      (addTransactionService as jest.Mock).mockRejectedValue(axiosError);
+
+      await addTransctions(mockRequest, mockResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Failed to convert currency",
+        error: "Currency conversion failed",
+      });
+    });
+
     it("should handle errors while adding a transaction", async () => {
       const newTransaction = {
         Date: "2023-01-01",
@@ -381,6 +412,38 @@ describe("Transaction Controllers", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         message: "Transaction updated successfully",
         transaction: updatedTransaction,
+      });
+    });
+
+    it("should handle AxiosErrorCurrency while updating a transaction", async () => {
+      const updatedTransaction = {
+        Date: "2025-01-21",
+        Description: "Updated",
+        Amount: 150,
+        Currency: "USD",
+      };
+
+      const mockRequest = {
+        params: { id: "1" },
+        body: updatedTransaction,
+      } as unknown as Request;
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      } as unknown as Response;
+
+      const axiosError = new Error("Currency conversion failed") as any;
+      axiosError.name = "AxiosErrorCurrency";
+      axiosError.statusCode = 400;
+
+      (updateTransactionService as jest.Mock).mockRejectedValue(axiosError);
+
+      await updateTransction(mockRequest, mockResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Failed to convert currency",
+        error: "Currency conversion failed",
       });
     });
 
@@ -489,6 +552,38 @@ describe("Transaction Controllers", () => {
         transactionsSaved: 1,
         duplicates: [],
         schemaErrors: [],
+      });
+    });
+
+    it("should handle AxiosErrorCurrency while uploading a file", async () => {
+      const mockFile = {
+        buffer: Buffer.from(
+          "Date,Description,Amount,Currency\n2013-12-31,Test,100,USD" // Out of valid range
+        ),
+      };
+
+      const mockRequest = {
+        file: mockFile,
+      } as unknown as Request;
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      } as unknown as Response;
+
+      const axiosError = new Error(
+        "Currency conversion failed for some rows"
+      ) as any;
+      axiosError.name = "AxiosErrorCurrency";
+      axiosError.statusCode = 400;
+
+      (uploadTransactionService as jest.Mock).mockRejectedValue(axiosError);
+
+      await uploadTransactions(mockRequest, mockResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Failed to convert currency for some rows",
+        error: "Currency conversion failed for some rows",
       });
     });
 

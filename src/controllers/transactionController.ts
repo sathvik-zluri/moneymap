@@ -68,7 +68,7 @@ export const addTransctions = async (
   } catch (error: any) {
     console.error("Error adding transaction:", error);
     if (error.name === "AxiosErrorCurrency") {
-      res.status(error.statusCode || 500).json({
+      res.status(400).json({
         message: "Failed to convert currency",
         error: error.message,
       });
@@ -111,7 +111,7 @@ export const updateTransction = async (
   } catch (error: any) {
     console.error("Error updating transaction:", error);
     if (error.name === "AxiosErrorCurrency") {
-      res.status(error.statusCode || 500).json({
+      res.status(400).json({
         message: "Failed to convert currency",
         error: error.message,
       });
@@ -166,7 +166,7 @@ export const uploadTransactions = async (
   } catch (error: any) {
     console.error("Error processing file:", error);
     if (error.name === "AxiosErrorCurrency") {
-      res.status(error.statusCode || 500).json({
+      res.status(400).json({
         message: "Failed to convert currency for some rows",
         error: error.message,
       });
