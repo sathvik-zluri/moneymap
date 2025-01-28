@@ -42,8 +42,9 @@ export const uploadTransactionService = async (
       schemaErrors.push({ row, message: "Invalid date format" });
       continue;
     }
-    // Trim the description and replace multiple spaces with a single space
+    // Trim the description and currency replace multiple spaces with a single space
     const trimmedDescription = Description.trim().replace(/\s+/g, " ");
+    const trimmedCurrency = Currency.trim();
 
     // Check if description contains any special characters
     const invalidChar = specialChars.find((char) =>
@@ -66,11 +67,20 @@ export const uploadTransactionService = async (
       continue;
     }
 
+    if (!trimmedCurrency) {
+      schemaErrors.push({
+        row,
+        message: "Currency cannot be empty",
+      });
+      continue;
+    }
+
     // Update the row with the cleaned description
     row.Description = trimmedDescription;
+    row.Currency = trimmedCurrency;
 
     const parsedAmount = parseFloat(Amount);
-    if (isNaN(parsedAmount) || !Currency) {
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
       schemaErrors.push({
         row,
         message: "Invalid schema: Missing required fields or invalid amount",
