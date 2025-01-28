@@ -2,14 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import { specialChars } from "../constants/specialChar";
 import Joi from "joi";
 
-// Create a regex that matches any of the special characters
-const specialCharsRegex = new RegExp(`[${specialChars.join("")}]`);
-
 export const validateTransactionInput = (
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
+  // Preprocess the 'Description' field to remove unwanted spaces
+  if (req.body.Description) {
+    req.body.Description = req.body.Description.trim().replace(/\s+/g, " ");
+  }
+
   const schema = Joi.object({
     Date: Joi.date()
       .max("now") // Ensures the date is not greater than today
@@ -20,14 +22,22 @@ export const validateTransactionInput = (
         "any.required": "Date is required",
       }),
     Description: Joi.string()
-      .trim()
       .required()
-      .replace(/\s+/g, " ") // Replace multiple spaces with a single space
-      .pattern(specialCharsRegex, { invert: true }) // Ensure no special chars are present
+      .custom((value, helpers) => {
+        // Remove invisible characters
+        for (const char of specialChars) {
+          if (value.includes(char)) {
+            return helpers.error("string.pattern.base", {
+              message: `Invalid 'Description'. Contains forbidden character: '${char}'`,
+            });
+          }
+        }
+        return value;
+      })
       .messages({
         "string.base": "Description must be a string",
         "string.empty": "Description cannot be empty",
-        "string.pattern.invert.base":
+        "string.pattern.base":
           "Invalid 'Description'. Contains special characters.",
         "any.required": "Description is required",
       }),
@@ -51,7 +61,7 @@ export const validateTransactionInput = (
   });
 
   //abortEarly: false will return all the validation errors found
-  const { error, value } = schema.validate(req.body, { abortEarly: false });
+  const { error } = schema.validate(req.body, { abortEarly: false });
 
   if (error) {
     res.status(400).json({
@@ -60,8 +70,6 @@ export const validateTransactionInput = (
     });
     return; // Stop further execution if validation fails
   }
-
-  req.body.Description = value.Description; // This is where the trimmed value is passed down
 
   next();
 };
