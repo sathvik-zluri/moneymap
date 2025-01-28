@@ -7,11 +7,6 @@ export const validateTransactionInput = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Preprocess the 'Description' field to remove unwanted spaces
-  if (req.body.Description) {
-    req.body.Description = req.body.Description.trim().replace(/\s+/g, " ");
-  }
-
   const schema = Joi.object({
     Date: Joi.date()
       .max("now") // Ensures the date is not greater than today
@@ -24,15 +19,17 @@ export const validateTransactionInput = (
     Description: Joi.string()
       .required()
       .custom((value, helpers) => {
+        const trimmedValue = value.trim().replace(/\s+/g, " "); // Remove unwanted spaces
+
         // Remove invisible characters
         for (const char of specialChars) {
-          if (value.includes(char)) {
+          if (trimmedValue.includes(char)) {
             return helpers.error("string.pattern.base", {
               message: `Invalid 'Description'. Contains forbidden character: '${char}'`,
             });
           }
         }
-        return value;
+        return trimmedValue;
       })
       .messages({
         "string.base": "Description must be a string",
@@ -61,7 +58,7 @@ export const validateTransactionInput = (
   });
 
   //abortEarly: false will return all the validation errors found
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error, value } = schema.validate(req.body, { abortEarly: false });
 
   if (error) {
     res.status(400).json({
@@ -70,6 +67,8 @@ export const validateTransactionInput = (
     });
     return; // Stop further execution if validation fails
   }
+
+  req.body = value;
 
   next();
 };
