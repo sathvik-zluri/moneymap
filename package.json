@@ -4,11 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/src/server.js",
+    "start": "pm2 start dist/src/server.js --name backend",
+    "stop": "pm2 stop backend",
+    "restart": "pm2 restart backend",
     "build": "tsc",
     "dev": "nodemon src/server.ts",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "deploy": "npm run stop && npm run build && npm run start"
   },
   "keywords": [],
   "author": "",
